@@ -43,7 +43,7 @@ def makeConnection(scheme, host):
 class Client:
     def __init__(self):
         self.batchSize = 500
-        self.serverUrl = "https://www.salesforce.com/services/Soap/u/7.0"
+        self.serverUrl = "https://www.salesforce.com/services/Soap/u/9.0"
         self.__conn = None
         
     def __del__(self):
@@ -51,8 +51,8 @@ class Client:
             self.__conn.close()
             
     # login, the serverUrl and sessionId are automatically handled, returns the loginResult structure       
-    def login(self, username, password):
-        lr = LoginRequest(self.serverUrl, username, password).post()
+    def login(self, username, password, organizationId=None):
+        lr = LoginRequest(self.serverUrl, username, password, organizationId).post()
         self.useSession(str(lr[_tPartnerNS.sessionId]), str(lr[_tPartnerNS.serverUrl]))
         return lr
 
@@ -335,10 +335,17 @@ class SoapEnvelope:
     
 
 class LoginRequest(SoapEnvelope):
-    def __init__(self, serverUrl, username, password):
+    def __init__(self, serverUrl, username, password, organizationId):
         SoapEnvelope.__init__(self, serverUrl, "login")
         self.__username = username
         self.__password = password
+        self.organizationId = organizationId
+
+    def writeHeaders(self, s):
+        if self.organizationId is not None:
+            s.startElement(_partnerNs, "LoginScopeHeader")
+            s.writeStringElement(_partnerNs, "organizationId", self.organizationId)
+            s.endElement()
 
     def writeBody(self, s):
         s.writeStringElement(_partnerNs, "username", self.__username)

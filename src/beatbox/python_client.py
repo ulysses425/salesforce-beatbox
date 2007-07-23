@@ -24,14 +24,17 @@ class SObject(object):
 
 class Client(BaseClient):
 
-    def login(self, username, passwd):
-        res = BaseClient.login(self, username, passwd)
+    def login(self, username, passwd, organizationId=None):
+        res = BaseClient.login(self, username, passwd, organizationId)
         data = dict()
         data['passwordExpired'] = _bool(res[_tPartnerNS.passwordExpired])
         data['serverUrl'] = str(res[_tPartnerNS.serverUrl])
         data['sessionId'] = str(res[_tPartnerNS.sessionId])
         data['userId'] = str(res[_tPartnerNS.userId])
-        data['userInfo'] = _extractUserInfo(res[_tPartnerNS.userInfo])
+	try:
+            data['userInfo'] = _extractUserInfo(res[_tPartnerNS.userInfo])
+        except KeyError:
+	    pass
         return data
 
     def isConnected(self):

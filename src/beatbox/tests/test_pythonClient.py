@@ -1,6 +1,8 @@
 from types import DictType, StringTypes, IntType, ListType, TupleType
 import unittest
 import datetime
+import string
+from random import choice
 
 import sfconfig
 import beatbox
@@ -508,6 +510,58 @@ class TestUtils(unittest.TestCase):
         self.failUnless(isinstance(contacts[0]['Favorite_Fruit__c'], list))
         self.assertEqual(len(contacts[0]['Favorite_Fruit__c']),2)  
         
+    def testSelfServiceLogin(self):
+        svc = self.svc
+	data = dict(type='Account',
+	    Name='ACME'
+	    )
+	res = svc.create([data])
+	account_id = res[0]['id']
+	lastname = 'Doe'
+	firstname = 'John'
+	email = 'john@doe.com'
+        data = dict(type='Contact',
+            LastName=lastname,
+            FirstName=firstname,
+            Phone='123-456-7890',
+            Email=email,
+            Birthdate=datetime.date(1970, 1, 4),
+	    AccountId=account_id
+            )
+        res = svc.create([data])
+	id = res[0]['id']
+        self._todelete.extend([id, account_id])
+	info = svc.getUserInfo()
+	chars = string.letters + string.digits
+	fullname = firstname + lastname
+	length= 80 - len(fullname)
+	ss_username = (fullname + ''.join([choice(chars) for i in range(length)])).lower()
+	ss_data = dict(type='SelfServiceUser',
+	    ContactId=id,
+	    LastName=lastname,
+	    FirstName=firstname,
+	    Email=email,
+	    LocaleSidKey=info['userLocale'],
+	    LanguageLocaleKey=info['userLanguage'],
+	    TimeZoneSidKey=info['userTimeZone'],
+	    Username=ss_username,
+	    IsActive='true'
+	    )
+        res = svc.create([ss_data])
+	ss_id = res[0]['id']
+	ss_password = 'foobar'
+	svc.setPassword(ss_id, ss_password)
+	ss_svc = beatbox.PythonClient()
+	ss_res = ss_svc.login(ss_username, ss_password, info['organizationId'])
+	self.assertEqual(ss_res['userId'], ss_id)
+	ss_data = dict(type='SelfServiceUser',
+	    Id=ss_id,
+	    IsActive='false'
+	    )
+	svc.update([ss_data])
+	self.assertRaises(SoapFaultError, ss_svc.login, ss_username,
+            ss_password, info['organizationId'])
+	    
 def test_suite():
     return unittest.TestSuite((
         unittest.makeSuite(TestUtils),
