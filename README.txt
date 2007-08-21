@@ -26,17 +26,19 @@ examples:
     
 running tests:
 
-  First, we need to add some custom fields in your Salesforce instance:
+  First, we need to add some custom fields to the Contacts object in your Salesforce instance:
 
-	- Add a Picklist (multi-select) labeled "Favorite Fruit", then add
-		Apple
-		Orange
-		Pear
-		
-		Leave default of 3 lines and field name should default to "Favorite_Fruit"
-	
-	- Add a Number labeled "Favorite Integer", with 18 places, 0 decimal places
-	- Add a Number labeled "Favorite Float", with 13 places, 5 decimal places
+    - Login to your Salesforce.com instance
+    - Browse to Setup --> Customize --> Contacts --> Fields --> "New" button
+    - Add a Picklist (multi-select) labeled "Favorite Fruit", then add
+        Apple
+        Orange
+        Pear
+        
+        Leave default of 3 lines and field name should default to "Favorite_Fruit"
+    
+    - Add a Number labeled "Favorite Integer", with 18 places, 0 decimal places
+    - Add a Number labeled "Favorite Float", with 13 places, 5 decimal places
 
   create a sfconfig file in your python path with the following format:
 
