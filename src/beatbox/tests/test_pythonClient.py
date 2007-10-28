@@ -508,6 +508,13 @@ class TestUtils(unittest.TestCase):
         self.failUnless(isinstance(contacts[0]['Favorite_Fruit__c'], list))
         self.assertEqual(len(contacts[0]['Favorite_Fruit__c']),2)  
         
+    def testIsNillableField(self):
+        svc = self.svc
+        res = svc.describeSObjects('Contact')
+        self.assertFalse(res[0].fields['LastName'].nillable)
+        self.assertTrue(res[0].fields['FirstName'].nillable)
+        self.assertTrue(res[0].fields['Favorite_Fruit__c'].nillable)
+        
 def test_suite():
     return unittest.TestSuite((
         unittest.makeSuite(TestUtils),
