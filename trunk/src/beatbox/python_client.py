@@ -304,6 +304,7 @@ def _extractFieldInfo(fdata):
     data['byteLength'] = int(str(fdata[_tPartnerNS.byteLength]))
     data['calculated'] = _bool(fdata[_tPartnerNS.calculated])
     data['createable'] = _bool(fdata[_tPartnerNS.createable])
+    data['nillable'] = _bool(fdata[_tPartnerNS.nillable])
     data['custom'] = _bool(fdata[_tPartnerNS.custom])
     data['defaultedOnCreate'] = _bool(fdata[_tPartnerNS.defaultedOnCreate])
     data['digits'] = int(str(fdata[_tPartnerNS.digits]))
