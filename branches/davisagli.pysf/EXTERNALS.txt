@@ -1,0 +1,3 @@
+# applied using svn propset svn:externals -F EXTERNALS.txt .
+
+suds http://svn.fedorahosted.org/svn/suds/trunk
