@@ -1,0 +1,108 @@
+Index: suds/suds/wsdl.py
+===================================================================
+--- suds/suds/wsdl.py	(revision 157)
++++ suds/suds/wsdl.py	(working copy)
+@@ -117,7 +117,10 @@
+         for operation in self.root.childrenAtPath('binding/operation'):
+             if method == operation.get('name'):
+                 operation = operation.getChild('operation')
+-                return operation.get('soapAction', default="")
++                soapAction = operation.get('soapAction', default=u'')
++                if soapAction == u'':
++                    soapAction = u'""'
++                return soapAction
+         return ""
+ 
+     def get_location(self):
+Index: suds/suds/client.py
+===================================================================
+--- suds/suds/client.py	(revision 157)
++++ suds/suds/client.py	(working copy)
+@@ -55,11 +55,11 @@
+                            The proxy is defined as {protocol:proxy,}
+         @type proxy: dict
+         """
+-        client = SoapClient(url, kwargs)
+-        schema = client.schema
+-        self.service = Service(client)
++        self.client = SoapClient(url, kwargs)
++        schema = self.client.schema
++        self.service = Service(self.client)
+         self.factory = Factory(schema)
+-        self.sd = ServiceDefinition(client.wsdl)
++        self.sd = ServiceDefinition(self.client.wsdl)
+         
+     def items(self, sobject):
+         """
+@@ -100,7 +100,7 @@
+         return unicode(self.sd)
+ 
+ 
+-class Service:
++class Service(object):
+     
+     """ Service wrapper object """
+     
+@@ -232,6 +232,7 @@
+         self.builder = Builder(self.schema)
+         self.cookiejar = CookieJar()
+         self.last_sent = None
++        self.soapheaders = list(kwargs.get('soapheaders', ()))
+         
+     def send(self, method, args, kwargs):
+         """
+@@ -250,7 +251,7 @@
+         binding.faults = self.arg.faults
+         headers = self.headers(method.name)
+         location = self.wsdl.get_location().encode('utf-8')
+-        soapheaders = kwargs.get('soapheaders', ())
++        soapheaders = self.soapheaders + list(kwargs.get('soapheaders', ()))
+         msg = binding.get_message(method.name, args, soapheaders)
+         log.debug('sending to (%s)\nmessage:\n%s', location, msg)
+         try:
+Index: suds/suds/__init__.py
+===================================================================
+--- suds/suds/__init__.py	(revision 157)
++++ suds/suds/__init__.py	(working copy)
+@@ -74,7 +74,7 @@
+     if name is None:
+         return logging.getLogger()
+     fmt =\
+-        '%(asctime)s [%(levelname)s] %(funcName)s() @%(filename)s:%(lineno)d\n%(message)s\n'
++        '%(asctime)s [%(levelname)s] @%(filename)s:%(lineno)d\n%(message)s\n'
+     logger = logging.getLogger(name)
+     root = logging.getLogger()
+     if not root.handlers:
+Index: suds/suds/bindings/unmarshaller.py
+===================================================================
+--- suds/suds/bindings/unmarshaller.py	(revision 157)
++++ suds/suds/bindings/unmarshaller.py	(working copy)
+@@ -318,7 +318,10 @@
+             content.type = found
+         else:
+             self.resolver.push(content.type)
+-        data = Factory.object(content.type.get_name())
++        type_name = content.type.get_name()
++        if not type(type_name) == type(u''):
++            type_name = content.node.name
++        data = Factory.object(type_name)
+         md = content.data.__metadata__
+         md.__type__ = content.type
+         
+Index: suds/suds/builder.py
+===================================================================
+--- suds/suds/builder.py	(revision 157)
++++ suds/suds/builder.py	(working copy)
+@@ -63,7 +63,11 @@
+             children = resolved.get_children()
+             if len(children) > 0:
+                 value = Factory.object(type.get_name())
+-        setattr(data, type.get_name(), value)
++        try:
++            setattr(data, type.get_name(), value)
++        except TypeError:
++            # type name was not a string
++            pass
+         if value is not None:
+             data = value
+         if not isinstance(data, list):

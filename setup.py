@@ -1,16 +1,28 @@
+from setuptools import setup, find_packages
+import sys, os
 
-from setuptools import setup
+version = '0.1'
 
-setup(name='beatbox',
-    version='0.9.1.1',
-    package_dir={'': 'src'},
-    packages=['beatbox'],
-    author = "Simon Fell",
-    description = "A Python library for querying/updating Saleforce.com data via SOAP API",
-    long_description = "This module contains 2 versions of the Salesforce client. XMLClient which is the original beatbox version of the client which returns xmltramp objects and PythonClient which returns dicts with proper python data types. ie integer fields return integers.",
-    license = "GNU GENERAL PUBLIC LICENSE Version 2",
-    keywords = "python salesforce salesforce.com",
-    url = "http://code.google.com/p/salesforce-beatbox/",
-    classifiers = ("Development Status :: 4 - Beta",)
-    )
-
+setup(name='davisagli.pysf',
+      version=version,
+      description="",
+      long_description="""\
+""",
+      classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+      keywords='',
+      author='David Glick',
+      author_email='davidglick@onenw.org',
+      url='',
+      license='',
+      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      include_package_data=True,
+      zip_safe=False,
+      install_requires=[
+          'suds'
+      ],
+      entry_points={
+          'console_scripts': [
+              'run = davisagli.pysf.main:main',
+          ]
+      },
+)
