@@ -354,6 +354,207 @@ class TestUtils(unittest.TestCase):
                 'Contact', "LastName = 'Doe' and FirstName = 'Jane'")
         self.assertEqual(res['size'], 1)
         self.assertEqual(res['records'][0]['Id'], janeid)
+
+    def testChildToParentMultiQuery(self):
+        svc = self.svc
+        account_data = dict(type='Account',
+                            Name='ChildTestAccount',
+                            AccountNumber='987654321',
+                            Site='www.testsite.com',
+                           )
+        account = svc.create([account_data])
+        self._todelete.append(account[0]['id'])
+
+        contact_data = dict(type='Contact',
+                            LastName='TestLastName',
+                            FirstName='TestFirstName',
+                            Phone='123-456-7890',
+                            AccountID=account[0]['id'],
+                            Email='testfirstname@testlastname.com',
+                            Birthdate = datetime.date(1965, 1, 5)
+                           )
+        contact = svc.create([contact_data])
+        self._todelete.append(contact[0]['id'])
+
+        query_res = svc.query("Id, LastName, FirstName, Account.Site, Account.AccountNumber",
+                              "Contact",
+                              "Phone='123-456-7890'"
+                             )
+        
+        self.assertEqual(query_res.size, 1)
+        rr = query_res.records[0]
+        self.assertEqual(rr.type, 'Contact')
+        map(self.assertEqual,
+            [rr.Id, rr.LastName, rr.FirstName, rr.Account.Site, rr.Account.AccountNumber],
+            [contact[0]['id'], contact_data['LastName'], contact_data['FirstName'], account_data['Site'], account_data['AccountNumber']])
+
+    def testChildToParentMultiQuery2(self):
+        svc = self.svc
+        paccount_data = dict(type='Account',
+                             Name='ParentTestAccount',
+                             AccountNumber='123456789',
+                             Site='www.testsite.com',
+                            )
+        paccount = svc.create([paccount_data])
+        self._todelete.append(paccount[0]['id'])
+
+        caccount_data= dict(type='Account',
+                            Name='ChildTestAccount',
+                            AccountNumber='987654321',
+                            Site='www.testsite.com',
+                            ParentID=paccount[0]['id']
+                           )
+        caccount = svc.create([caccount_data])
+        self._todelete.append(caccount[0]['id'])
+
+        contact_data = dict(type='Contact',
+                            LastName='TestLastName',
+                            FirstName='TestFirstName',
+                            Phone='123-456-7890',
+                            AccountID=caccount[0]['id'],
+                            Email='testfirstname@testlastname.com',
+                            Birthdate = datetime.date(1965, 1, 5)
+                           )
+        contact = svc.create([contact_data])
+        self._todelete.append(contact[0]['id'])
+
+        query_res = svc.query("Id, LastName, FirstName, Account.Site, Account.Parent.AccountNumber",
+                              "Contact",
+                              "Account.AccountNumber='987654321'"
+                             )
+
+        rr = query_res.records[0]
+        self.assertEqual(query_res.size, 1)
+        self.assertEqual(rr.type, 'Contact')
+        map(self.assertEqual,
+            [rr.Id, rr.LastName, rr.FirstName, rr.Account.Site, rr.Account.Parent.AccountNumber],
+            [contact[0]['id'], contact_data['LastName'], contact_data['FirstName'], caccount_data['Site'], paccount_data['AccountNumber']])
+   
+    def testParentToChildMultiQuery(self):
+        svc = self.svc
+        caccount_data= dict(type='Account',
+                            Name='ChildTestAccount',
+                            AccountNumber='987654321',
+                            Site='www.testsite.com',
+                           )
+        caccount = svc.create([caccount_data])
+        self._todelete.append(caccount[0]['id'])
+
+        contact_data = dict(type='Contact',
+                            LastName='TestLastName',
+                            FirstName='TestFirstName',
+                            Phone='123-456-7890',
+                            AccountID=caccount[0]['id'],
+                            Email='testfirstname@testlastname.com',
+                            Birthdate = datetime.date(1965, 1, 5)
+                           )
+        contact = svc.create([contact_data])
+        self._todelete.append(contact[0]['id'])
+
+        contact_data2 = dict(type='Contact',
+                            LastName='TestLastName2',
+                            FirstName='TestFirstName2',
+                            Phone='123-456-7890',
+                            AccountID=caccount[0]['id'],
+                            Email='testfirstname2@testlastname2.com',
+                            Birthdate = datetime.date(1965, 1, 5)
+                           )
+        contact2 = svc.create([contact_data2])
+        self._todelete.append(contact2[0]['id'])
+
+        query_res = svc.query("Id, Name, (select FirstName from Contacts)",
+                              "Account",
+                              "AccountNumber='987654321'"
+                             )
+
+        rr = query_res.records[0]
+        self.assertEqual(query_res.size, 1)
+        self.assertEqual(rr.type, 'Account')
+
+        map(self.assertEqual,
+            [rr.Id, rr.Name],
+            [caccount[0]['id'], caccount_data['Name']])
+
+    def testParentToChildMultiQuery2(self):
+        svc = self.svc
+        caccount_data= dict(type='Account',
+                            Name='ChildTestAccount',
+                            AccountNumber='987654321',
+                            Site='www.testsite.com',
+                           )
+        caccount = svc.create([caccount_data])
+        self._todelete.append(caccount[0]['id'])
+
+        contact_data = dict(type='Contact',
+                            LastName='TestLastName',
+                            FirstName='TestFirstName',
+                            Phone='123-456-7890',
+                            AccountID=caccount[0]['id'],
+                            Email='testfirstname@testlastname.com',
+                            Birthdate = datetime.date(1965, 1, 5)
+                           )
+        contact = svc.create([contact_data])
+        self._todelete.append(contact[0]['id'])
+
+        contact_data2 = dict(type='Contact',
+                            LastName='TestLastName2',
+                            FirstName='TestFirstName2',
+                            Phone='123-456-7890',
+                            AccountID=caccount[0]['id'],
+                            Email='testfirstname2@testlastname2.com',
+                            Birthdate = datetime.date(1965, 1, 5)
+                           )
+        contact2 = svc.create([contact_data2])
+        self._todelete.append(contact2[0]['id'])
+
+        query_res = svc.query("Id, Name, (select FirstName, Account.Site from Contacts), (select Name from Assets)",
+                              "Account",
+                              "AccountNumber='987654321'"
+                             )
+
+        rr = query_res.records[0]
+        self.assertEqual(query_res.size, 1)
+        self.assertEqual(rr.type, 'Account')
+
+        map(self.assertEqual,
+            [rr.Id, rr.Name],
+            [caccount[0]['id'], caccount_data['Name']])
+
+        result = 0
+        for name in [contact_data2['FirstName'],
+                     contact_data['FirstName']]:
+            if name in [rr.Contacts.records[i].FirstName for i in range(len(rr.Contacts.records))]:
+                result += 1
+        self.assertEqual(result, rr.Contacts.size)
+
+    def testMultiQueryCount(self):
+        svc = self.svc
+        contact_data = dict(type='Contact',
+                            LastName='TestLastName',
+                            FirstName='TestFirstName',
+                            Phone='123-456-7890',
+                            Email='testfirstname@testlastname.com',
+                            Birthdate = datetime.date(1965, 1, 5)
+                           )
+        contact = svc.create([contact_data])
+        self._todelete.append(contact[0]['id'])
+
+        contact_data2 = dict(type='Contact',
+                           LastName='TestLastName2',
+                            FirstName='TestFirstName2',
+                            Phone='123-456-7890',
+                            Email='testfirstname2@testlastname2.com',
+                            Birthdate = datetime.date(1965, 1, 5)
+                           )
+        contact2 = svc.create([contact_data2])
+        self._todelete.append(contact2[0]['id'])
+
+        query_res = svc.query("count()",
+                              "Contact",
+                              "Phone='123-456-7890'"
+                             )
+
+        self.assertEqual(query_res.size, 2)
     
     def testQueryDoesNotExist(self):
         res = self.svc.query('LastName, FirstName, Phone, Email, Birthdate',
