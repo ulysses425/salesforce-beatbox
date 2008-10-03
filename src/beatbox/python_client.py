@@ -4,10 +4,14 @@ from marshall import marshall
 from types import TupleType, ListType
 import re
 import copy
-from xmltramp import Namespace
+from xmltramp import Namespace, Element
+import sys
+import logging
+import pickle
 
 _tSchemaInstanceNS = Namespace('http://www.w3.org/2001/XMLSchema-instance')
 _tSchemaNS = Namespace('http://www.w3.org/2001/XMLSchema')
+_tMetadataNS = Namespace('http://soap.sforce.com/2006/04/metadata')
 
 querytyperegx = re.compile('(?:from|FROM) (\S+)')
 
@@ -15,14 +19,24 @@ class SObject(object):
 
     def __init__(self, **kw):
         for k, v in kw.items():
+            #print ' init sobject ' + k + ' ' + str(v)
             setattr(self, k, v)
-
+            
     def marshall(self, fieldname, xml):
         field = self.fields[fieldname]
         return field.marshall(xml)
+    
+    def get(self, key): 
+        return self.__dict__.get(key)
 
-
+    def __getitem__(self, key):
+        return self.__dict__.get(key)
+    def keys(self):
+        return self.__dict__.keys()
+    
 class Client(BaseClient):
+#    def __init__(self):
+#        self.describeCache = dict()
 
     def login(self, username, passwd):
         res = BaseClient.login(self, username, passwd)
@@ -31,9 +45,26 @@ class Client(BaseClient):
         data['serverUrl'] = str(res[_tPartnerNS.serverUrl])
         data['sessionId'] = str(res[_tPartnerNS.sessionId])
         data['userId'] = str(res[_tPartnerNS.userId])
+        data['metadataServerUrl'] = str(res[_tPartnerNS.metadataServerUrl])
         data['userInfo'] = _extractUserInfo(res[_tPartnerNS.userInfo])
+        self.describeCache = dict()
         return data
 
+    def useSession(self, sessionId, serverUrl):
+        if ( str(sessionId) == '' or str(serverUrl) == '' ): 
+            raise AttributeError , 'Missing server url or session ID to useSession method'
+        logging.info( sessionId, serverUrl)
+        res = BaseClient.useSession(self, sessionId, serverUrl)
+        #print res.__dict__
+        data = dict()
+#        data['passwordExpired'] = _bool(res[_tPartnerNS.passwordExpired])
+#        data['serverUrl'] = str(res[_tPartnerNS.serverUrl])
+#        data['sessionId'] = str(res[_tPartnerNS.sessionId])
+#        data['userId'] = str(res[_tPartnerNS.userId])
+#        data['userInfo'] = _extractUserInfo(res[_tPartnerNS.userInfo])
+        self.describeCache = dict()
+        return self.getUserInfo()
+    
     def isConnected(self):
         """ First pass at a method to check if we're connected or not """
         if self.__conn and self.__conn._HTTPConnection__state == 'Idle':
@@ -49,6 +80,11 @@ class Client(BaseClient):
         return data
 
     def describeSObjects(self, sObjectTypes):
+        if (self.describeCache.has_key(sObjectTypes)):
+            data = list()
+            data.append(self.describeCache[sObjectTypes])
+            return data
+        
         res = BaseClient.describeSObjects(self, sObjectTypes)
         if type(res) not in (TupleType, ListType):
             res = [res]
@@ -66,6 +102,8 @@ class Client(BaseClient):
                 field_map[f.name] = f
             d['fields'] = field_map
             rawreldata = r[_tPartnerNS.ChildRelationships:]
+            # why is this list empty ? 
+            # print repr(rawreldata)
             relinfo = [_extractChildRelInfo(cr) for cr in rawreldata]
             d['ChildRelationships'] = relinfo
             d['keyPrefix'] = str(r[_tPartnerNS.keyPrefix])
@@ -83,6 +121,8 @@ class Client(BaseClient):
             d['urlEdit'] = str(r[_tPartnerNS.urlEdit])
             d['urlNew'] = str(r[_tPartnerNS.urlNew])
             data.append(SObject(**d))
+            self.describeCache[str(r[_tPartnerNS.name])] = SObject(**d)
+        
         return data
 
     def create(self, sObjects):
@@ -138,34 +178,105 @@ class Client(BaseClient):
             else:
                 d['errors'] = list()
         return data
-
-    def query(self, fields, sObjectType, conditionExpression=''):
-        type_data = self.describeSObjects(sObjectType)[0]
+          
+    def query_old(self, fields, sObjectType, conditionExpression=''):
+        #type_data = self.describeSObjects(sObjectType)[0]
         queryString = 'select %s from %s' % (fields, sObjectType)
-        if conditionExpression:
-            queryString = '%s where %s' % (queryString, conditionExpression)
+        if conditionExpression: queryString = '%s where %s' % (queryString, conditionExpression)
         fields = [f.strip() for f in fields.split(',')]
         res = BaseClient.query(self, queryString)
-        locator = QueryLocator(str(res[_tPartnerNS.queryLocator]), type_data,
-                                fields)
+        locator = QueryLocator( str(res[_tPartnerNS.queryLocator]), )
         data = dict(queryLocator = locator,
             done = _bool(res[_tPartnerNS.done]),
-            records = [_extractRecord(type_data, fields, r)
+            records = [self.extractRecord( r )
                        for r in res[_tPartnerNS.records:]],
             size = int(str(res[_tPartnerNS.size]))
             )
         return data
 
-    def queryMore(self, queryLocator):
-        locator = queryLocator.locator
-        type_data = queryLocator.type_data
-        fields = queryLocator.fields
-        res = BaseClient.queryMore(self, locator)
-        locator = QueryLocator(str(res[_tPartnerNS.queryLocator]), type_data,
-                                fields)
+    def extractRecord(self, r):
+        def sobjectType(r):
+            """ find the type of sobject given a query result"""
+            for x in r._dir:
+                if isinstance(x, Element) :
+                    if ( x._name == _tSObjectNS.type):
+                        return x._dir[0] 
+            raise AttributeError, 'No Sobject element type found'        
+        
+        def fieldsList(r):
+            """ list all the field names in this record, skip 
+            type as this is special, and does not get marshaled"""
+            ret= list()
+            for field in r: 
+                f = str(field._name[1:][0])
+                if ( f != 'type' ) : 
+                    ret.append(f)
+            return ret
+        
+        def getFieldByName(fname, r):
+            """ from this record, locate a child by name"""
+            for fld in r:
+                if ( fld._name[1] == fname ) : 
+                    return fld
+            raise KeyError, 'could not locate '+fname+ ' in record'   
+         
+        # begin the extract of information
+        sObjectType =  sobjectType(r)
+        #print 'sobject type  is : ' + sObjectType
+        
+        type_data = self.describeSObjects(sObjectType)[0]
+        
+        data = dict()
+        myfields = fieldsList(r)
+        for fname in myfields:
+            try : 
+                data[fname] = type_data.marshall(fname, r)
+            except KeyError :
+                # no key of this type, perhaps this is a query result 
+                # from a related list returned from the server
+                fld = getFieldByName(fname, r)
+                
+                if ( len(fld) == 0 ):  # load a null related list
+                    data[fname] = dict(queryLocator = None,
+                        done = True, records = [], size = int(0) 
+                    )
+                    continue
+                
+                if ( str(fld(_tSchemaInstanceNS.type)) != 'QueryResult' ) :
+                    raise AttributeError, 'Expected QueryResult or Field'
+                
+                # load the populated related list
+                data[fname] = dict(queryLocator = None, done = True,
+                    records = [self.extractRecord(p) 
+                               for p in fld[_tPartnerNS.records:]],
+                    size = int(str(fld[_tPartnerNS.size]))
+                )
+                  
+        #print str(data)        
+        return data
+
+    def query(self, queryString):
+        res = BaseClient.query(self, queryString)
+        locator = QueryLocator( str(res[_tPartnerNS.queryLocator]) )
+        
         data = dict(queryLocator = locator,
             done = _bool(res[_tPartnerNS.done]),
-            records = [_extractRecord(type_data, fields, r)
+            records = [self.extractRecord( r )
+                       for r in res[_tPartnerNS.records:]],
+            size = int(str(res[_tPartnerNS.size]))
+            )
+        return data
+
+  
+    def queryMore(self, queryLocator):
+        locator = queryLocator.locator
+        #sObjectType = queryLocator.sObjectType
+        #fields = queryLocator.fields
+        res = BaseClient.queryMore(self, locator)
+        locator = QueryLocator( str(res[_tPartnerNS.queryLocator]) )
+        data = dict(queryLocator = locator,
+            done = _bool(res[_tPartnerNS.done]),
+            records = [_extractRecord( r )
                        for r in res[_tPartnerNS.records:]],
             size = int(str(res[_tPartnerNS.size]))
             )
@@ -248,12 +359,61 @@ class Client(BaseClient):
     def describeLayout(self, sObjectType):
         raise NotImplementedError
 
+class MetaClient(Client):
+    
+    def __init__(self):
+        self.serverUrl = "https://www.salesforce.com/services/Soap/u/13.0"
+
+    def login(self, username, passwd):
+        res = BaseClient.metalogin(self, username, passwd)
+        logging.info(self.serverUrl)
+        data = dict()
+        data['passwordExpired'] = _bool(res[_tPartnerNS.passwordExpired])
+        data['metadataServerUrl'] = str(res[_tPartnerNS.metadataServerUrl])
+        data['sessionId'] = str(res[_tPartnerNS.sessionId])
+        data['userId'] = str(res[_tPartnerNS.userId])
+        data['userInfo'] = _extractUserInfo(res[_tPartnerNS.userInfo])
+        return data
+    
+    def useSession(self, sessionId, serverUrl):
+        if ( str(sessionId) == '' or str(serverUrl) == '' ): 
+            raise AttributeError , 'Missing server url or session ID to useSession method'
+        logging.info( sessionId, serverUrl)
+        res = BaseClient.useSession(self, sessionId, serverUrl)
+        data = dict()
+        data['sessionId'] = sessionId
+        return data
+
+    def metaupdate(self, metadata):
+        res = BaseClient.metaupdate(self, metadata)
+        return _extractAsyncResult(res)
+    
+    def metacreate(self, metadata):
+        res = BaseClient.metacreate(self, metadata)          
+        return _extractAsyncResult(res)
+
+    def checkstatus(self, id):
+        res = BaseClient.checkstatus(self, id)
+        return _extractAsyncResult(res)
+
+def _extractAsyncResult(res):
+    data = dict()
+    data['done'] = _bool(res[_tMetadataNS.done]);
+    data['id'] = str(res[_tMetadataNS.id]);
+    data['state'] = str(res[_tMetadataNS.state]);
+    data['secondsToWait'] = str(res[_tMetadataNS.secondsToWait]);
+    try:
+        data['statusCode'] = str(res[_tMetadataNS.statusCode]);
+        data['message'] = str(res[_tMetadataNS.message]);
+    except:
+        data['statusCode'] = '0'     
+    logging.info( data )
+    return data
+    
 class QueryLocator(object):
 
-    def __init__(self, locator, type_data, fields):
+    def __init__(self, locator):
         self.locator = locator
-        self.type_data = type_data
-        self.fields = fields
 
 
 class Field(object):
@@ -360,11 +520,6 @@ def _extractError(edata):
     data['fields'] = [str(f) for f in edata[_tPartnerNS.fields:]]
     return data
 
-def _extractRecord(type_data, fields, r):
-    data = dict()
-    for fname in fields:
-        data[fname] = type_data.marshall(fname, r)
-    return data
 
 def _extractTab(tdata):
     data = dict(
