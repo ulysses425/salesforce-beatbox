@@ -26,6 +26,7 @@ _sobjectNs = "urn:sobject.partner.soap.sforce.com"
 _envNs = "http://schemas.xmlsoap.org/soap/envelope/"
 _metadataNs = "http://soap.sforce.com/2006/04/metadata"
 _xsi = "http://www.w3.org/2001/XMLSchema-instance"
+_wsdl_apexNs = "http://soap.sforce.com/2006/08/apex"
 _noAttrs = AttributesNSImpl({}, {})
 
 # global constants for xmltramp namespaces, used to access response data
@@ -33,6 +34,7 @@ _tPartnerNS = xmltramp.Namespace(_partnerNs)
 _tSObjectNS = xmltramp.Namespace(_sobjectNs)
 _tMetadataNS = xmltramp.Namespace(_metadataNs)
 _tSoapNS = xmltramp.Namespace(_envNs)
+_tWsdlApexNS = xmltramp.Namespace(_wsdl_apexNs)
 _xmlns_attrs = AttributesNSImpl({ (None, u'xmlns'): _metadataNs}, {})
 #(None, u'xmlns:ns2'): 'http://soap.sforce.com/2006/04/metadata'
 
@@ -43,10 +45,12 @@ forceHttp=False     # force all connections to be HTTP, for debugging
 
 
 def makeConnection(scheme, host):
-    if forceHttp or scheme.upper() == 'HTTP':
-        return httplib.HTTPConnection(host)
-    return httplib.HTTPSConnection(host)
-
+    try: 
+        if forceHttp or scheme.upper() == 'HTTP':
+            return httplib.HTTPConnection(host)
+        return httplib.HTTPSConnection(host)
+    except NameError:
+        pass 
 
 # the main sforce client proxy class
 class Client:
@@ -118,6 +122,8 @@ class Client:
     def delete(self, ids):
         return DeleteRequest(self.__serverUrl, self.sessionId, ids).post(self.__conn)
 
+    def executeanonymous(self, codeblock):
+        return ExecuteAnnonRequest(self.__serverUrl, self.sessionId, codeblock).post(self.__conn)
     # sObjectTypes can be 1 or a list, returns a single describe result or a list of them
     def describeSObjects(self, sObjectTypes):
         return DescribeSObjectsRequest(self.__serverUrl, self.sessionId, sObjectTypes).post(self.__conn)
@@ -258,6 +264,7 @@ class SoapWriter(XmlWriter):
         self.startPrefixMapping("p", _partnerNs)
         self.startPrefixMapping("m", _metadataNs)
         self.startPrefixMapping("o", _sobjectNs)
+        self.startPrefixMapping("w", _wsdl_apexNs)
         self.startPrefixMapping("xsi", _xsi)
         self.startElement(_envNs, "Envelope")
         
@@ -267,6 +274,7 @@ class SoapWriter(XmlWriter):
         self.endPrefixMapping("p")
         self.endPrefixMapping("m")
         self.endPrefixMapping("s")
+        self.endPrefixMapping("w")
         self.endPrefixMapping("xsi")
         return XmlWriter.endDocument(self)  
 
@@ -554,6 +562,16 @@ class CreateRequest(UpdateRequest):
     def __init__(self, serverUrl, sessionId, sObjects):
         UpdateRequest.__init__(self, serverUrl, sessionId, sObjects, "create")
  
+class ExecuteAnnonRequest(AuthenticatedRequest):
+    def __init__(self, serverUrl, sessionId, codeblock):
+        serverUrl = serverUrl.replace('/u/','/s/')
+        AuthenticatedRequest.__init__(self, serverUrl, sessionId, "executeAnonymous")
+        self.__block = codeblock;
+        self.namespace = _wsdl_apexNs
+        
+    def writeBody(self, s):
+        s.writeStringElement(_wsdl_apexNs, "String", self.__block)
+        
 class DeleteRequest(AuthenticatedRequest):
     def __init__(self, serverUrl, sessionId, ids):
         AuthenticatedRequest.__init__(self, serverUrl, sessionId, "delete")
