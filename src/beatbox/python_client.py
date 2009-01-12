@@ -156,6 +156,18 @@ class Client(BaseClient):
             )
         return data
 
+    def search(self, sosl):
+        type_data_contact = self.describeSObjects('Contact')[0]
+        res = BaseClient.search(self, sosl)
+        searchRecords = res[_tPartnerNS.searchRecords:]
+        
+        data = dict(
+            searchRecords = [_extractSearchRecord(r) for r in searchRecords],
+            size = len(searchRecords)
+            )
+        return data
+
+
     def queryMore(self, queryLocator):
         locator = queryLocator.locator
         type_data = queryLocator.type_data
@@ -365,6 +377,18 @@ def _extractRecord(type_data, fields, r):
     for fname in fields:
         data[fname] = type_data.marshall(fname, r)
     return data
+
+def _extractSearchRecord(r):
+    # r is one element beginning with a searchRecords tag.
+    record = r.record
+    
+    data = dict()    
+    for f in record:
+        key = f._name[1]
+        data[key] = str(f)
+        # data[key] = type_data.marshall(key, r)
+    return data
+    
 
 def _extractTab(tdata):
     data = dict(

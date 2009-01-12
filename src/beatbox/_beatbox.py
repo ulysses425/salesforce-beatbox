@@ -66,6 +66,9 @@ class Client:
     # set the batchSize property on the Client instance to change the batchsize for query/queryMore
     def query(self, soql):
         return QueryRequest(self.__serverUrl, self.sessionId, self.batchSize, soql).post(self.__conn)
+
+    def search(self, sosl):
+        return SearchRequest(self.__serverUrl, self.sessionId, self.batchSize, sosl).post(self.__conn)
     
     def queryMore(self, queryLocator):
         return QueryMoreRequest(self.__serverUrl, self.sessionId, self.batchSize, queryLocator).post(self.__conn)
@@ -390,6 +393,15 @@ class QueryRequest(QueryOptionsRequest):
     def writeBody(self, s):
         s.writeStringElement(_partnerNs, "queryString", self.__query)
 
+
+class SearchRequest(QueryOptionsRequest):
+    def __init__(self, serverUrl, sessionId, batchSize, sosl):
+        QueryOptionsRequest.__init__(self, serverUrl, sessionId, batchSize, "search")
+        self.__search = sosl
+                
+    def writeBody(self, s):
+        s.writeStringElement(_partnerNs, "searchString", self.__search)
+        
 
 class QueryMoreRequest(QueryOptionsRequest):
     def __init__(self, serverUrl, sessionId, batchSize, queryLocator):
