@@ -32,7 +32,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(type(res['maxBatchSize']), IntType)
         self.assertEqual(type(res['types']), ListType)
         self.failUnless(len(res['types']) > 0)
-
+    
     def testDescribeSObjects(self):
         svc = self.svc
         globalres = svc.describeGlobal()
@@ -42,7 +42,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(res), 1)
         res = svc.describeSObjects(types)
         self.assertEqual(len(types), len(res))
-
+    
     def testCreate(self):
         svc = self.svc
         data = dict(type='Contact',
@@ -86,7 +86,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(contacts), 1)
         contact = contacts[0]
         self.assertEqual(data[testField], contact[testField])
-
+    
     def testSetFloatField(self):
     # this fails when you have a large amount (I didn't test the #) of decimal places.
         svc = self.svc
@@ -160,7 +160,7 @@ class TestUtils(unittest.TestCase):
          #for k in ['LastName', 'FirstName', 'Phone', 'Email', 'Birthdate', 'Favorite_Fruit__c']:
              #self.assertEqual(
                  #data[k], contact[k])            
-
+    
     def testFailedCreate(self):
         svc = self.svc
         data = dict(type='Contact',
@@ -171,7 +171,7 @@ class TestUtils(unittest.TestCase):
             Birthdate = 'foo'
             )
         self.assertRaises(SoapFaultError, svc.create, data)
-
+    
     def testRetrieve(self):
         svc = self.svc
         data = dict(type='Contact',
@@ -191,7 +191,7 @@ class TestUtils(unittest.TestCase):
         fieldnames = ', '.join(fieldnames)
         contacts = svc.retrieve(fieldnames, 'Contact', [id])
         self.assertEqual(len(contacts), 1)
-
+    
     def testRetrieveDeleted(self):
         svc = self.svc
         data = dict(type='Contact',
@@ -359,7 +359,7 @@ class TestUtils(unittest.TestCase):
         res = self.svc.query('LastName, FirstName, Phone, Email, Birthdate',
                 'Contact', "LastName = 'Doe'")
         self.assertEqual(res['size'], 0)
-   
+       
     def testQueryMore(self):
         svc = self.svc
         svc.batchSize = 100
@@ -385,6 +385,70 @@ class TestUtils(unittest.TestCase):
         res = svc.queryMore(res['queryLocator'])
         self.failUnless(res['done'])
         self.assertEqual(len(res['records']), 50)
+
+    def testSearch(self):
+        
+        sosl_tests = [
+                        {'sosl': 'find {jimmy} in ALL FIELDS returning Contact(Id, LastName, FirstName, Phone, Email, Birthdate)', 'expected': 1},
+                        {'sosl': 'find {jane} in ALL FIELDS returning Contact(Id, LastName, FirstName, Phone, Email, Birthdate)', 'expected': 1},
+                        {'sosl': 'find {"doe.com"} in ALL FIELDS returning Contact(Id, LastName, FirstName, Phone, Email, Birthdate)', 'expected': 2},
+                        {'sosl': 'find {Doe} in ALL FIELDS returning Contact(Id, LastName, FirstName, Phone, Email, Birthdate)', 'expected': 2},
+                        {'sosl': 'find {saldfjalshjkdg} in ALL FIELDS returning Contact(Id, LastName, FirstName, Phone, Email, Birthdate)', 'expected': 0}
+                     ]
+        
+        svc = self.svc
+
+        # first check for how many results we get before adding our own entries.
+        i = 0
+        tests_initial_results = []
+        for test in sosl_tests:
+            res = svc.search(test['sosl'])
+            tests_initial_results.append(len(res['searchRecords']))
+            # print "test: %s res: %s " % (i, res)
+            i += 1
+
+        data = dict(type='Contact',
+            LastName='Doe',
+            FirstName='Jimmy',
+            Phone='123-456-7890',
+            Email='jimmy@doe.com',
+            Birthdate = datetime.date(1970, 1, 4)
+            )
+        res = svc.create([data])
+        self._todelete.append(res[0]['id'])
+        data2 = dict(type='Contact',
+            LastName='Doe',
+            FirstName='Jane',
+            Phone='123-456-7890',
+            Email='jane@doe.com',
+            Birthdate = datetime.date(1972, 10, 15)
+            )
+        res = svc.create([data2])
+        
+        janeid = res[0]['id']
+        self._todelete.append(janeid)
+        
+        
+        i= 0
+        for test in sosl_tests:
+            sosl = test['sosl']
+            expected = test['expected']
+            initial = tests_initial_results[i]
+            res = svc.search(sosl)
+            actual = res['size']
+            resulting_actual = actual-initial
+            # 
+            # print "actual: %s" % actual
+            # print "res %s" % res
+            # print "initial %s" % initial
+            # print "expected %s" % expected
+            # 
+            errMsg = "Error on search with sosl: '%s'. Expected: %s  Actual: %s  Resulting Actual: %s Initial: %s" 
+            errMsg = errMsg % (sosl, expected, actual, resulting_actual, initial)
+            # print "test: %s res: %s" % (i, res)
+            
+            self.assertEqual(resulting_actual, expected , errMsg)
+            i += 1
     
     def testGetDeleted(self):
         svc = self.svc
@@ -425,7 +489,7 @@ class TestUtils(unittest.TestCase):
         svc.update(data)
         res = svc.getUpdated('Contact', startdate, enddate)
         self.failUnless(id in res)
-   
+       
     def testGetUserInfo(self):
         svc = self.svc
         userinfo = svc.getUserInfo()
@@ -442,7 +506,7 @@ class TestUtils(unittest.TestCase):
         self.failUnless('userLocale' in userinfo)
         self.failUnless('userTimeZone' in userinfo)
         self.failUnless('userUiSkin' in userinfo)
-   
+       
     def testDescribeTabs(self):
         tabinfo = self.svc.describeTabs()
         for info in tabinfo:
@@ -455,7 +519,7 @@ class TestUtils(unittest.TestCase):
                 self.failUnless('label' in tab)
                 self.failUnless('sObjectName' in tab)
                 self.failUnless('url' in tab)
-   
+       
     def testDescribeLayout(self):
         svc = self.svc
         self.assertRaises(NotImplementedError, svc.describeLayout,
