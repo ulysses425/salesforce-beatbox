@@ -96,6 +96,35 @@ class TestBeatbox(unittest.TestCase):
         self.assertEqual(
             janeid, str(records[0][beatbox._tSObjectNS.Id]))
 
+    def testSearch(self):
+        data = dict(type='Contact',
+            LastName='Doe',
+            FirstName='Jimmy',
+            Phone='123-456-7890',
+            Email='jimmy@doe.com',
+            Birthdate = datetime.date(1970, 1, 4)
+            )
+        res = svc.create([data])
+        self.assertEqual(str(res[partnerns.success]), 'true')
+        self._todelete.append(str(res[partnerns.id]))
+        data2 = dict(type='Contact',
+            LastName='Doe',
+            FirstName='Jaylee',
+            Phone='123-456-7890',
+            Email='jane@doe.com',
+            Birthdate = datetime.date(1972, 10, 15)
+            )
+        res = svc.create([data2])
+        self.assertEqual(str(res[partnerns.success]), 'true')
+        janeid = str(res[partnerns.id])
+        self._todelete.append(janeid)
+        
+        sosl = 'find {Jaylee} in ALL FIELDS returning Contact(Id, LastName, FirstName, Phone, Email, Birthdate)'
+        res = svc.search(sosl)
+        import pdb ; pdb.set_trace( )
+        self.assertEqual(int(str(res[partnerns.size])), 1)
+
+
 
 def test_suite():
     return unittest.TestSuite((
