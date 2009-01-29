@@ -157,7 +157,6 @@ class Client(BaseClient):
         return data
 
     def search(self, sosl):
-        type_data_contact = self.describeSObjects('Contact')[0]
         res = BaseClient.search(self, sosl)
         searchRecords = res[_tPartnerNS.searchRecords:]
         
