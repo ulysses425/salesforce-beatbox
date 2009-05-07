@@ -18,6 +18,11 @@ conditionExpression. So if the original query was:
 the new call to query would be:
     query('FirstName, LastName', 'Contact', "LastName = 'Doe'"
 
+compatibility:
+
+    Beatbox supports version 7.0 of the Salesforce Partner Web Services
+    API.
+
 examples:
 
     The examples folder contains the examples for the original beatbox. For

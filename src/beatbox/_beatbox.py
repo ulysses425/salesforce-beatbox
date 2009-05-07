@@ -22,6 +22,8 @@ _sobjectNs = "urn:sobject.partner.soap.sforce.com"
 _envNs = "http://schemas.xmlsoap.org/soap/envelope/"
 _noAttrs = AttributesNSImpl({}, {})
 
+DEFAULT_SERVER_URL = 'https://www.salesforce.com/services/Soap/u/7.0'
+
 # global constants for xmltramp namespaces, used to access response data
 _tPartnerNS = xmltramp.Namespace(_partnerNs)
 _tSObjectNS = xmltramp.Namespace(_sobjectNs)
@@ -41,15 +43,15 @@ def makeConnection(scheme, host):
 
 # the main sforce client proxy class
 class Client:
-    def __init__(self):
+    def __init__(self, serverUrl=DEFAULT_SERVER_URL):
         self.batchSize = 500
-        self.serverUrl = "https://www.salesforce.com/services/Soap/u/7.0"
+        self.serverUrl = serverUrl
         self.__conn = None
-        
+
     def __del__(self):
         if self.__conn != None:
             self.__conn.close()
-            
+
     # login, the serverUrl and sessionId are automatically handled, returns the loginResult structure       
     def login(self, username, password):
         lr = LoginRequest(self.serverUrl, username, password).post()
