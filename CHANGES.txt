@@ -4,6 +4,9 @@ Changelog
 0.12 (unreleased)
 -----------------
 
+* Use the default serverUrl value if the passed value evaluates to boolean
+  False.
+  [davisagli]
 
 0.11 (2009-05-13)
 -----------------
