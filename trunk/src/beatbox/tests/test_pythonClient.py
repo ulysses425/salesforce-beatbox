@@ -514,7 +514,30 @@ class TestUtils(unittest.TestCase):
         self.assertFalse(res[0].fields['LastName'].nillable)
         self.assertTrue(res[0].fields['FirstName'].nillable)
         self.assertTrue(res[0].fields['Favorite_Fruit__c'].nillable)
-        
+
+    def testUpsert(self):
+        svc = self.svc
+        data = dict(type='Contact',
+            LastName='Doe',
+            FirstName='John',
+            Phone='123-456-7890',
+            Email='john@doe.com',
+            Birthdate = datetime.date(1970, 1, 4)
+            )
+        res = svc.upsert('Email', [data])
+        self.failUnless(type(res) in (ListType, TupleType))
+        self.failUnless(len(res) == 1)
+        self.failUnless(res[0]['success'])
+        id = res[0]['id']
+        self._todelete.append(id)
+        contacts = svc.retrieve('LastName, FirstName, Phone, Email, Birthdate',
+            'Contact', [id])
+        self.assertEqual(len(contacts), 1)
+        contact = contacts[0]
+        for k in ['LastName', 'FirstName', 'Phone', 'Email', 'Birthdate']:
+            self.assertEqual(
+                data[k], contact[k])
+
 def test_suite():
     return unittest.TestSuite((
         unittest.makeSuite(TestUtils),

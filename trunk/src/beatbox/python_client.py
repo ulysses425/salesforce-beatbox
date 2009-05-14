@@ -204,7 +204,7 @@ class Client(BaseClient):
                                for e in r[_tPartnerNS.errors:]]
             else:
                 d['errors'] = list()
-            d['isCreated'] = _bool(r[_tPartnerNS.isCreated])
+            d['isCreated'] = d['created'] = _bool(r[_tPartnerNS.created])
         return data
 
     def getDeleted(self, sObjectType, start, end):
