@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.12 (unreleased)
+0.12 (2009-05-13)
 -----------------
 
 * Use the default serverUrl value if the passed value evaluates to boolean
