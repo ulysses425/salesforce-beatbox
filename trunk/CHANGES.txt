@@ -4,6 +4,10 @@ Changelog
 0.11 (unreleased)
 -----------------
 
+* Access 'created' instead of 'isCreated' in the upsert result. This closes
+  http://code.google.com/p/salesforce-beatbox/issues/detail?id=4
+  [davisagli]
+
 0.10 (2009-05-06)
 -----------------
 
