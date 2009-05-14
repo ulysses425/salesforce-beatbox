@@ -1,6 +1,6 @@
 """beatbox: Makes the salesforce.com SOAP API easily accessible."""
 
-__version__ = "0.9"
+__version__ = '0.12dev'
 __author__ = "Simon Fell"
 __credits__ = "Mad shouts to the sforce possie"
 __copyright__ = "(C) 2006 Simon Fell. GNU GPL 2."
@@ -43,9 +43,9 @@ def makeConnection(scheme, host):
 
 # the main sforce client proxy class
 class Client:
-    def __init__(self, serverUrl=DEFAULT_SERVER_URL):
+    def __init__(self, serverUrl=None):
         self.batchSize = 500
-        self.serverUrl = serverUrl
+        self.serverUrl = serverUrl or DEFAULT_SERVER_URL
         self.__conn = None
 
     def __del__(self):
