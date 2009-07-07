@@ -9,7 +9,40 @@ from xmltramp import Namespace
 _tSchemaInstanceNS = Namespace('http://www.w3.org/2001/XMLSchema-instance')
 _tSchemaNS = Namespace('http://www.w3.org/2001/XMLSchema')
 
+DEFAULT_FIELD_TYPE = "string"
 querytyperegx = re.compile('(?:from|FROM) (\S+)')
+
+class QueryRecord(dict):
+
+    def __getattr__(self, n):
+        try:
+            return self[n]
+        except KeyError:
+            return dict.__getattr__(self, n)
+   
+    def __setattr__(self, n, v):
+        self[n] = v
+
+class QueryRecordSet(list):
+    
+     def __init__(self, records, done, size, **kw):
+        for r in records:
+            self.append(r)
+        self.records = self
+        self.done = done
+        self.size = size
+        for k, v in kw.items():
+            setattr(self, k, v)
+
+
+     def __getitem__(self, n):
+        if type(n) == type(''):
+            try:
+                return getattr(self, n)
+            except AttributeError, n:
+                raise KeyError
+        else:
+            return list.__getitem__(self, n)
 
 class SObject(object):
 
@@ -18,7 +51,10 @@ class SObject(object):
             setattr(self, k, v)
 
     def marshall(self, fieldname, xml):
-        field = self.fields[fieldname]
+        if self.fields.has_key(fieldname):
+            field = self.fields[fieldname]
+        else:
+            return marshall(DEFAULT_FIELD_TYPE, fieldname, xml)
         return field.marshall(xml)
 
 
@@ -139,36 +175,57 @@ class Client(BaseClient):
                 d['errors'] = list()
         return data
 
+    def queryTypesDescriptions(self, types):
+        """
+        """
+        types = list(types)
+        if types:
+            types_descs = self.describeSObjects(types)
+        else:
+            types_descs = []
+        return dict(map(lambda t, d:(t, d), types, types_descs))
+
+    def _extractRecord(self, r):
+        record = QueryRecord()
+        if r:
+            type_data = self.typesDescs[str(r[_tSObjectNS.type])]
+            for field in r:
+               fname = str(field._name[1]) 
+               if isObject(field):
+                   record[fname] = self._extractRecord(r[field._name:][0])
+               elif isQueryResult(field):
+                   record[fname] = QueryRecordSet(records=[self._extractRecord(rec) for rec in field[_tPartnerNS.records:]],
+                                                  done=field[_tPartnerNS.done],
+                                                  size=int(str(field[_tPartnerNS.size]))
+                                                 )
+               else:
+                   record[fname] = type_data.marshall(fname, r)
+        return record
+
     def query(self, fields, sObjectType, conditionExpression=''):
-        type_data = self.describeSObjects(sObjectType)[0]
         queryString = 'select %s from %s' % (fields, sObjectType)
         if conditionExpression:
             queryString = '%s where %s' % (queryString, conditionExpression)
-        fields = [f.strip() for f in fields.split(',')]
         res = BaseClient.query(self, queryString)
-        locator = QueryLocator(str(res[_tPartnerNS.queryLocator]), type_data,
-                                fields)
-        data = dict(queryLocator = locator,
-            done = _bool(res[_tPartnerNS.done]),
-            records = [_extractRecord(type_data, fields, r)
-                       for r in res[_tPartnerNS.records:]],
-            size = int(str(res[_tPartnerNS.size]))
-            )
+        types = reduce(lambda a,b: a|b, [getRecordTypes(r) for r in res[_tPartnerNS.records:]], set())
+        self.typesDescs = self.queryTypesDescriptions(types)
+        data = QueryRecordSet(records=[self._extractRecord(r) for r in res[_tPartnerNS.records:]],
+                              done=_bool(res[_tPartnerNS.done]),
+                              size=int(str(res[_tPartnerNS.size])),
+                              queryLocator = str(res[_tPartnerNS.queryLocator]))
         return data
 
     def queryMore(self, queryLocator):
-        locator = queryLocator.locator
-        type_data = queryLocator.type_data
-        fields = queryLocator.fields
+        locator = queryLocator
         res = BaseClient.queryMore(self, locator)
-        locator = QueryLocator(str(res[_tPartnerNS.queryLocator]), type_data,
-                                fields)
-        data = dict(queryLocator = locator,
-            done = _bool(res[_tPartnerNS.done]),
-            records = [_extractRecord(type_data, fields, r)
-                       for r in res[_tPartnerNS.records:]],
-            size = int(str(res[_tPartnerNS.size]))
-            )
+        types = reduce(lambda a,b: a|b, [getRecordTypes(r) for r in res[_tPartnerNS.records:]], set())
+        new_types = types - set(self.typesDescs.keys())
+        if new_types:
+            self.typeDescs.update(self.queryTypesDescriptions(types))
+        data = QueryRecordSet(records=[self._extractRecord(r) for r in res[_tPartnerNS.records:]],
+                              done=_bool(res[_tPartnerNS.done]),
+                              size=int(str(res[_tPartnerNS.size])),
+                              queryLocator = str(res[_tPartnerNS.queryLocator]))
         return data
 
     def delete(self, ids):
@@ -247,13 +304,6 @@ class Client(BaseClient):
 
     def describeLayout(self, sObjectType):
         raise NotImplementedError
-
-class QueryLocator(object):
-
-    def __init__(self, locator, type_data, fields):
-        self.locator = locator
-        self.type_data = type_data
-        self.fields = fields
 
 
 class Field(object):
@@ -360,12 +410,6 @@ def _extractError(edata):
     data['fields'] = [str(f) for f in edata[_tPartnerNS.fields:]]
     return data
 
-def _extractRecord(type_data, fields, r):
-    data = dict()
-    for fname in fields:
-        data[fname] = type_data.marshall(fname, r)
-    return data
-
 def _extractTab(tdata):
     data = dict(
             custom = _bool(tdata[_tPartnerNS.custom]),
@@ -393,6 +437,24 @@ def _extractUserInfo(res):
             userUiSkin = str(res[_tPartnerNS.userUiSkin]))
     return data
 
+def isObject(xml):
+    try:
+        if xml(_tSchemaInstanceNS.type) == 'sf:sObject':
+            return True
+        else:
+            return False
+    except KeyError:
+        return False
+        
+def isQueryResult(xml):
+    try:
+        if xml(_tSchemaInstanceNS.type) == 'QueryResult':
+            return True
+        else:
+            return False
+    except KeyError:
+        return False
+
 def isnil(xml):
     try:
         if xml(_tSchemaInstanceNS.nil) == 'true':
@@ -401,3 +463,14 @@ def isnil(xml):
             return False
     except KeyError:
         return False
+
+def getRecordTypes(xml):
+    record_types = set() 
+    if xml:
+        record_types.add(str(xml[_tSObjectNS.type]))
+        for field in xml:
+            if isObject(field):
+                record_types.update(getRecordTypes(field))
+            elif isQueryResult(field):
+                record_types.update(reduce(lambda x, y: x|y, [getRecordTypes(r) for r in field[_tPartnerNS.records:]]))
+    return record_types
