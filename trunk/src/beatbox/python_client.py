@@ -1,4 +1,4 @@
-from _beatbox import _tPartnerNS, _tSObjectNS, _tSoapNS
+from _beatbox import _tPartnerNS, _tSObjectNS
 from _beatbox import Client as BaseClient
 from marshall import marshall
 from types import TupleType, ListType
@@ -25,17 +25,19 @@ class QueryRecord(dict):
 
 class QueryRecordSet(list):
     
-     def __init__(self, records, done, size, **kw):
+    def __init__(self, records, done, size, **kw):
         for r in records:
             self.append(r)
-        self.records = self
         self.done = done
         self.size = size
         for k, v in kw.items():
             setattr(self, k, v)
 
+    @property
+    def records(self):
+        return self
 
-     def __getitem__(self, n):
+    def __getitem__(self, n):
         if type(n) == type(''):
             try:
                 return getattr(self, n)
@@ -397,9 +399,9 @@ def _extractPicklistEntry(pldata):
 
 def _extractChildRelInfo(crdata):
     data = dict()
-    data['cascadeDelete'] = _bool(rel[_tPartnerNS.cascadeDelete])
-    data['childSObject'] = str(rel[_tPartnerNS.childSObject])
-    data['field'] = str(rel[_tPartnerNS.field])
+    data['cascadeDelete'] = _bool(crdata[_tPartnerNS.cascadeDelete])
+    data['childSObject'] = str(crdata[_tPartnerNS.childSObject])
+    data['field'] = str(crdata[_tPartnerNS.field])
     return data
 
 
