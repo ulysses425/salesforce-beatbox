@@ -4,6 +4,19 @@ Changelog
 16.0 (unreleased)
 -----------------
 
+* Support relationship queries and other queries that may return multiple
+  types of objects.  Object type descriptions (required for marshalling
+  field values into the correct Python type) are cached after the first
+  time they are used.  Thanks to Melnychuk Taras of Quintagroup.
+  [davisagli]
+
+* Queries now return a list-like QueryRecordSet holding a sequence of dict-like
+  QueryRecord objects, instead of a dict containing a list of dicts.  This
+  allows for more Pythonic access such as results[0].Id instead of
+  results['results'][0]['Id'].  The old syntax should still work.  Thanks to
+  Melnychuk Taras of Quintagroup.
+  [davisagli]
+
 * Update to use version 16.0 of the Salesforce.com partner WSDL.
   [davisagli]
 
