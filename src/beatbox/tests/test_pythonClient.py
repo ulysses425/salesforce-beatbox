@@ -36,7 +36,7 @@ class TestUtils(unittest.TestCase):
     def testDescribeSObjects(self):
         svc = self.svc
         globalres = svc.describeGlobal()
-        types = globalres['types']
+        types = globalres['types'][:100]
         res = svc.describeSObjects(types[0])
         self.assertEqual(type(res), ListType)
         self.assertEqual(len(res), 1)

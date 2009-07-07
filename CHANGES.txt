@@ -1,9 +1,11 @@
 Changelog
 =========
 
-0.13 (unreleased)
+16.0 (unreleased)
 -----------------
 
+* Update to use version 16.0 of the Salesforce.com partner WSDL.
+  [davisagli]
 
 0.12 (2009-05-13)
 -----------------
