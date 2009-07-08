@@ -347,11 +347,40 @@ class TestUtils(unittest.TestCase):
         res = svc.create([data2])
         janeid = res[0]['id']
         self._todelete.append(janeid)
+        res = svc.query("SELECT LastName, FirstName, Phone, Email, Birthdate FROM Contact WHERE LastName = 'Doe'")
+        self.assertEqual(res['size'], 2)
+        res = svc.query("SELECT Id, LastName, FirstName, Phone, Email, Birthdate FROM Contact WHERE LastName = 'Doe' and FirstName = 'Jane'")
+        self.assertEqual(res['size'], 1)
+        self.assertEqual(res['records'][0]['Id'], janeid)
+
+    def testBackwardsCompatibleQuery(self):
+        svc = self.svc
+        data = dict(type='Contact',
+            LastName='Doe',
+            FirstName='John',
+            Phone='123-456-7890',
+            Email='john@doe.com',
+            Birthdate = datetime.date(1970, 1, 4)
+            )
+        res = svc.create([data])
+        self._todelete.append(res[0]['id'])
+        data2 = dict(type='Contact',
+            LastName='Doe',
+            FirstName='Jane',
+            Phone='123-456-7890',
+            Email='jane@doe.com',
+            Birthdate = datetime.date(1972, 10, 15)
+            )
+        res = svc.create([data2])
+        janeid = res[0]['id']
+        self._todelete.append(janeid)
+        # conditional expression as positional arg
         res = svc.query('LastName, FirstName, Phone, Email, Birthdate',
                 'Contact', "LastName = 'Doe'")
         self.assertEqual(res['size'], 2)
+        # conditional expression as kwarg
         res = svc.query('Id, LastName, FirstName, Phone, Email, Birthdate',
-                'Contact', "LastName = 'Doe' and FirstName = 'Jane'")
+                'Contact', conditionalExpression="LastName = 'Doe' and FirstName = 'Jane'")
         self.assertEqual(res['size'], 1)
         self.assertEqual(res['records'][0]['Id'], janeid)
 

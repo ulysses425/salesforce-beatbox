@@ -204,10 +204,18 @@ class Client(BaseClient):
                    record[fname] = type_data.marshall(fname, r)
         return record
 
-    def query(self, fields, sObjectType, conditionExpression=''):
-        queryString = 'select %s from %s' % (fields, sObjectType)
-        if conditionExpression:
-            queryString = '%s where %s' % (queryString, conditionExpression)
+    def query(self, *args, **kw):
+        if len(args) == 1: # full query string
+            queryString = args[0]
+        elif len(args) == 2: # BBB: fields, sObjectType
+            queryString = 'select %s from %s' % (args[0], args[1])
+            if 'conditionalExpression' in kw: # BBB: fields, sObjectType, conditionExpression as kwarg
+                queryString += ' where %s' % (kw['conditionalExpression'])
+        elif len(args) == 3: # BBB: fields, sObjectType, conditionExpression as positional arg
+            queryString = 'select %s from %s where %s' % (args[0], args[1], args[2])
+        else:
+            raise RuntimeError, "Wrong number of arguments to query method."
+
         res = BaseClient.query(self, queryString)
         # calculate the union of the sets of record types from each record
         types = reduce(lambda a,b: a|b, [getRecordTypes(r) for r in res[_tPartnerNS.records:]], set())
