@@ -209,6 +209,7 @@ class Client(BaseClient):
         if conditionExpression:
             queryString = '%s where %s' % (queryString, conditionExpression)
         res = BaseClient.query(self, queryString)
+        # calculate the union of the sets of record types from each record
         types = reduce(lambda a,b: a|b, [getRecordTypes(r) for r in res[_tPartnerNS.records:]], set())
         self.typesDescs = self.queryTypesDescriptions(types)
         data = QueryRecordSet(records=[self._extractRecord(r) for r in res[_tPartnerNS.records:]],
@@ -220,6 +221,7 @@ class Client(BaseClient):
     def queryMore(self, queryLocator):
         locator = queryLocator
         res = BaseClient.queryMore(self, locator)
+        # calculate the union of the sets of record types from each record
         types = reduce(lambda a,b: a|b, [getRecordTypes(r) for r in res[_tPartnerNS.records:]], set())
         new_types = types - set(self.typesDescs.keys())
         if new_types:
