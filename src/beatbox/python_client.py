@@ -62,6 +62,13 @@ class SObject(object):
 
 class Client(BaseClient):
 
+    cacheTypeDescriptions = False
+
+    def __init__(self, serverUrl=None, cacheTypeDescriptions=False):
+        BaseClient.__init__(self, serverUrl=serverUrl)
+        self.cacheTypeDescriptions = cacheTypeDescriptions
+        self.typeDescs = {}
+
     def login(self, username, passwd):
         res = BaseClient.login(self, username, passwd)
         data = dict()
@@ -190,7 +197,7 @@ class Client(BaseClient):
     def _extractRecord(self, r):
         record = QueryRecord()
         if r:
-            type_data = self.typesDescs[str(r[_tSObjectNS.type])]
+            type_data = self.typeDescs[str(r[_tSObjectNS.type])]
             for field in r:
                fname = str(field._name[1]) 
                if isObject(field):
@@ -203,6 +210,9 @@ class Client(BaseClient):
                else:
                    record[fname] = type_data.marshall(fname, r)
         return record
+
+    def flushTypeDescriptionsCache(self):
+        self.typeDescs = {}
 
     def query(self, *args, **kw):
         if len(args) == 1: # full query string
@@ -219,7 +229,11 @@ class Client(BaseClient):
         res = BaseClient.query(self, queryString)
         # calculate the union of the sets of record types from each record
         types = reduce(lambda a,b: a|b, [getRecordTypes(r) for r in res[_tPartnerNS.records:]], set())
-        self.typesDescs = self.queryTypesDescriptions(types)
+        if not self.cacheTypeDescriptions:
+            self.flushTypeDescriptionsCache()
+        new_types = types - set(self.typeDescs.keys())
+        if new_types:
+            self.typeDescs.update(self.queryTypesDescriptions(new_types))
         data = QueryRecordSet(records=[self._extractRecord(r) for r in res[_tPartnerNS.records:]],
                               done=_bool(res[_tPartnerNS.done]),
                               size=int(str(res[_tPartnerNS.size])),
@@ -231,9 +245,9 @@ class Client(BaseClient):
         res = BaseClient.queryMore(self, locator)
         # calculate the union of the sets of record types from each record
         types = reduce(lambda a,b: a|b, [getRecordTypes(r) for r in res[_tPartnerNS.records:]], set())
-        new_types = types - set(self.typesDescs.keys())
+        new_types = types - set(self.typeDescs.keys())
         if new_types:
-            self.typeDescs.update(self.queryTypesDescriptions(types))
+            self.typeDescs.update(self.queryTypesDescriptions(new_types))
         data = QueryRecordSet(records=[self._extractRecord(r) for r in res[_tPartnerNS.records:]],
                               done=_bool(res[_tPartnerNS.done]),
                               size=int(str(res[_tPartnerNS.size])),

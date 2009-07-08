@@ -4,6 +4,16 @@ Changelog
 16.0 (unreleased)
 -----------------
 
+* Added an optional cache for the sObject type descriptions needed for
+  marshalling query results into Python objects. This can avoid an extra
+  describeSObjects API call for each query, but means that the information
+  could become stale if the type metadata is modified in Salesforce.com.
+  The cache is off by default. Turn it on by passing
+  cacheTypeDescriptions=True when instantiating a Python client. The cache may
+  be reset by calling the flushTypeDescriptionsCache method of the Python
+  client.
+  [davisagli]
+
 * Support a full SOQL statement as a parameter to the query method of the
   Python client.  The old 3-part method signature (fields, sObjectType,
   conditionalExpression) should continue to work.

@@ -66,7 +66,7 @@ class TestUtils(unittest.TestCase):
             self.assertEqual(
                 data[k], contact[k])
                 
-        
+
     def testSetIntegerField(self):
     #Passes when you feed it floats, even if salesforce field is defined for 0 decimal places.  Lack of data validation in SF?
         svc = self.svc
@@ -106,7 +106,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(contacts), 1)
         contact = contacts[0]
         self.assertEqual(data[testField], contact[testField])
-    
+
     def testCreatePickListMultiple(self):
          svc = self.svc
         
@@ -131,7 +131,7 @@ class TestUtils(unittest.TestCase):
          for k in ['LastName', 'FirstName', 'Phone', 'Email', 'Birthdate', 'Favorite_Fruit__c']:
              self.assertEqual(
                  data[k], contact[k])
-            
+
      #def testCreatePickListMultipleWithInvalid(self):
          #""" This fails, and I guess it should(?) 
          #     SF doesn't enforce vocabularies, appearently """
@@ -171,7 +171,7 @@ class TestUtils(unittest.TestCase):
             Birthdate = 'foo'
             )
         self.assertRaises(SoapFaultError, svc.create, data)
-
+    
     def testRetrieve(self):
         svc = self.svc
         data = dict(type='Contact',
@@ -211,7 +211,7 @@ class TestUtils(unittest.TestCase):
         fieldnames = ', '.join(fieldnames)
         contacts = svc.retrieve(fieldnames, 'Contact', [id])
         self.assertEqual(len(contacts), 0)
-    
+
     def testDelete(self):
         svc = self.svc
         data = dict(type='Contact',
@@ -227,7 +227,7 @@ class TestUtils(unittest.TestCase):
         self.failUnless(res[0]['success'])
         contacts = svc.retrieve('LastName', 'Contact', [id])
         self.assertEqual(len(contacts), 0)
-    
+
     def testUpdate(self):
         svc = self.svc
         originaldate = datetime.date(1970, 1, 4)
@@ -253,7 +253,7 @@ class TestUtils(unittest.TestCase):
         contacts = svc.retrieve('LastName, Birthdate', 'Contact', [id])
         self.assertEqual(contacts[0]['Birthdate'], newdate)
         self.assertEqual(contacts[0]['LastName'], lastname)
-    
+
     def testShrinkMultiPicklist(self):
         svc = self.svc
         originalList = ["Pear","Apple"]
@@ -277,7 +277,7 @@ class TestUtils(unittest.TestCase):
         svc.update(data)
         contacts = svc.retrieve('LastName, Favorite_Fruit__c', 'Contact', [id])
         self.assertEqual(len(contacts[0]['Favorite_Fruit__c']),1)
-    
+
     def testGrowMultiPicklist(self):
         svc = self.svc
         originalList = ["Pear","Apple"]
@@ -301,7 +301,7 @@ class TestUtils(unittest.TestCase):
         svc.update(data)
         contacts = svc.retrieve('LastName, Favorite_Fruit__c', 'Contact', [id])
         self.assertEqual(len(contacts[0]['Favorite_Fruit__c']),3)
-        
+
     def testUpdateDeleted(self):
         svc = self.svc
         originaldate = datetime.date(1970, 1, 4)
@@ -325,7 +325,7 @@ class TestUtils(unittest.TestCase):
         res = svc.update(data)
         self.failUnless(not res[0]['success'])
         self.failUnless(len(res[0]['errors']) > 0)
-    
+
     def testQuery(self):
         svc = self.svc
         data = dict(type='Contact',
@@ -384,6 +384,33 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(res['size'], 1)
         self.assertEqual(res['records'][0]['Id'], janeid)
 
+    def testTypeDescriptionsCache(self):
+        # patch describeSObjects to make a record when it is called
+        calls = []
+        standard_describeSObjects = beatbox.PythonClient.describeSObjects
+        def patched_describeSObjects(self, sObjectTypes):
+            calls.append(sObjectTypes)
+            return standard_describeSObjects(self, sObjectTypes)
+        beatbox.PythonClient.describeSObjects = patched_describeSObjects
+        
+        # turn the cache on
+        self.svc.cacheTypeDescriptions = True
+        
+        # should get called the first time
+        res = self.svc.query('SELECT Id FROM Contact')
+        self.assertEqual(calls, [['Contact']])
+        # but not the second time
+        res = self.svc.query('SELECT Id FROM Contact')
+        self.assertEqual(calls, [['Contact']])
+        
+        # if we flush the cache, it should get called again
+        self.svc.flushTypeDescriptionsCache()
+        res = self.svc.query('SELECT Id FROM Contact')
+        self.assertEqual(calls, [['Contact'], ['Contact']])
+
+        # clean up
+        self.svc.cacheTypeDescriptions = False
+
     def testChildToParentMultiQuery(self):
         svc = self.svc
         account_data = dict(type='Account',
@@ -416,7 +443,7 @@ class TestUtils(unittest.TestCase):
         map(self.assertEqual,
             [rr.Id, rr.LastName, rr.FirstName, rr.Account.Site, rr.Account.AccountNumber],
             [contact[0]['id'], contact_data['LastName'], contact_data['FirstName'], account_data['Site'], account_data['AccountNumber']])
-
+    
     def testChildToParentMultiQuery2(self):
         svc = self.svc
         paccount_data = dict(type='Account',
@@ -426,7 +453,7 @@ class TestUtils(unittest.TestCase):
                             )
         paccount = svc.create([paccount_data])
         self._todelete.append(paccount[0]['id'])
-
+    
         caccount_data= dict(type='Account',
                             Name='ChildTestAccount',
                             AccountNumber='987654321',
@@ -435,7 +462,7 @@ class TestUtils(unittest.TestCase):
                            )
         caccount = svc.create([caccount_data])
         self._todelete.append(caccount[0]['id'])
-
+    
         contact_data = dict(type='Contact',
                             LastName='TestLastName',
                             FirstName='TestFirstName',
@@ -446,19 +473,19 @@ class TestUtils(unittest.TestCase):
                            )
         contact = svc.create([contact_data])
         self._todelete.append(contact[0]['id'])
-
+    
         query_res = svc.query("Id, LastName, FirstName, Account.Site, Account.Parent.AccountNumber",
                               "Contact",
                               "Account.AccountNumber='987654321'"
                              )
-
+    
         rr = query_res.records[0]
         self.assertEqual(query_res.size, 1)
         self.assertEqual(rr.type, 'Contact')
         map(self.assertEqual,
             [rr.Id, rr.LastName, rr.FirstName, rr.Account.Site, rr.Account.Parent.AccountNumber],
             [contact[0]['id'], contact_data['LastName'], contact_data['FirstName'], caccount_data['Site'], paccount_data['AccountNumber']])
-   
+
     def testParentToChildMultiQuery(self):
         svc = self.svc
         caccount_data= dict(type='Account',
@@ -479,7 +506,7 @@ class TestUtils(unittest.TestCase):
                            )
         contact = svc.create([contact_data])
         self._todelete.append(contact[0]['id'])
-
+    
         contact_data2 = dict(type='Contact',
                             LastName='TestLastName2',
                             FirstName='TestFirstName2',
@@ -490,16 +517,16 @@ class TestUtils(unittest.TestCase):
                            )
         contact2 = svc.create([contact_data2])
         self._todelete.append(contact2[0]['id'])
-
+    
         query_res = svc.query("Id, Name, (select FirstName from Contacts)",
                               "Account",
                               "AccountNumber='987654321'"
                              )
-
+    
         rr = query_res.records[0]
         self.assertEqual(query_res.size, 1)
         self.assertEqual(rr.type, 'Account')
-
+    
         map(self.assertEqual,
             [rr.Id, rr.Name],
             [caccount[0]['id'], caccount_data['Name']])
@@ -513,7 +540,7 @@ class TestUtils(unittest.TestCase):
                            )
         caccount = svc.create([caccount_data])
         self._todelete.append(caccount[0]['id'])
-
+    
         contact_data = dict(type='Contact',
                             LastName='TestLastName',
                             FirstName='TestFirstName',
@@ -524,7 +551,7 @@ class TestUtils(unittest.TestCase):
                            )
         contact = svc.create([contact_data])
         self._todelete.append(contact[0]['id'])
-
+    
         contact_data2 = dict(type='Contact',
                             LastName='TestLastName2',
                             FirstName='TestFirstName2',
@@ -535,20 +562,20 @@ class TestUtils(unittest.TestCase):
                            )
         contact2 = svc.create([contact_data2])
         self._todelete.append(contact2[0]['id'])
-
+    
         query_res = svc.query("Id, Name, (select FirstName, Account.Site from Contacts), (select Name from Assets)",
                               "Account",
                               "AccountNumber='987654321'"
                              )
-
+    
         rr = query_res.records[0]
         self.assertEqual(query_res.size, 1)
         self.assertEqual(rr.type, 'Account')
-
+    
         map(self.assertEqual,
             [rr.Id, rr.Name],
             [caccount[0]['id'], caccount_data['Name']])
-
+    
         result = 0
         for name in [contact_data2['FirstName'],
                      contact_data['FirstName']]:
@@ -567,7 +594,7 @@ class TestUtils(unittest.TestCase):
                            )
         contact = svc.create([contact_data])
         self._todelete.append(contact[0]['id'])
-
+    
         contact_data2 = dict(type='Contact',
                            LastName='TestLastName2',
                             FirstName='TestFirstName2',
@@ -577,19 +604,19 @@ class TestUtils(unittest.TestCase):
                            )
         contact2 = svc.create([contact_data2])
         self._todelete.append(contact2[0]['id'])
-
+    
         query_res = svc.query("count()",
                               "Contact",
                               "Phone='123-456-7890'"
                              )
-
-        self.assertEqual(query_res.size, 2)
     
+        self.assertEqual(query_res.size, 2)
+
     def testQueryDoesNotExist(self):
         res = self.svc.query('LastName, FirstName, Phone, Email, Birthdate',
                 'Contact', "LastName = 'Doe'")
         self.assertEqual(res['size'], 0)
-   
+
     def testQueryMore(self):
         svc = self.svc
         svc.batchSize = 100
@@ -615,7 +642,7 @@ class TestUtils(unittest.TestCase):
         res = svc.queryMore(res['queryLocator'])
         self.failUnless(res['done'])
         self.assertEqual(len(res['records']), 50)
-    
+
     def testGetDeleted(self):
         svc = self.svc
         startdate = datetime.datetime.utcnow()
@@ -634,7 +661,7 @@ class TestUtils(unittest.TestCase):
         self.failUnless(len(res) != 0)
         ids = [r['id'] for r in res]
         self.failUnless(id in ids)
-    
+
     def testGetUpdated(self):
         svc = self.svc
         startdate = datetime.datetime.utcnow()
@@ -655,7 +682,7 @@ class TestUtils(unittest.TestCase):
         svc.update(data)
         res = svc.getUpdated('Contact', startdate, enddate)
         self.failUnless(id in res)
-   
+
     def testGetUserInfo(self):
         svc = self.svc
         userinfo = svc.getUserInfo()
@@ -672,7 +699,7 @@ class TestUtils(unittest.TestCase):
         self.failUnless('userLocale' in userinfo)
         self.failUnless('userTimeZone' in userinfo)
         self.failUnless('userUiSkin' in userinfo)
-   
+
     def testDescribeTabs(self):
         tabinfo = self.svc.describeTabs()
         for info in tabinfo:
@@ -685,12 +712,12 @@ class TestUtils(unittest.TestCase):
                 self.failUnless('label' in tab)
                 self.failUnless('sObjectName' in tab)
                 self.failUnless('url' in tab)
-   
+
     def testDescribeLayout(self):
         svc = self.svc
         self.assertRaises(NotImplementedError, svc.describeLayout,
             'Contact')
-    
+
     def testSetMultiPicklistToEmpty(self):
         svc = self.svc
         originalList = ["Pear","Apple"]
@@ -713,7 +740,7 @@ class TestUtils(unittest.TestCase):
         contacts = svc.retrieve('LastName, Favorite_Fruit__c', 'Contact', [id])
         self.failUnless(isinstance(contacts[0]['Favorite_Fruit__c'], list))
         self.assertEqual(len(contacts[0]['Favorite_Fruit__c']),0)  
-    
+
     def testAddToEmptyMultiPicklist(self):
         svc = self.svc
         originalList = []
@@ -737,7 +764,7 @@ class TestUtils(unittest.TestCase):
         contacts = svc.retrieve('LastName, Favorite_Fruit__c', 'Contact', [id])
         self.failUnless(isinstance(contacts[0]['Favorite_Fruit__c'], list))
         self.assertEqual(len(contacts[0]['Favorite_Fruit__c']),2)  
-        
+
     def testIsNillableField(self):
         svc = self.svc
         res = svc.describeSObjects('Contact')
