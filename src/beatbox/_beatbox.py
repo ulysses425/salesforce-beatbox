@@ -49,7 +49,7 @@ class Client:
         self.__conn = None
 
     def __del__(self):
-        if self.__conn != None:
+        if callable(getattr(self.__conn, 'close', None)):
             self.__conn.close()
 
     # login, the serverUrl and sessionId are automatically handled, returns the loginResult structure       
