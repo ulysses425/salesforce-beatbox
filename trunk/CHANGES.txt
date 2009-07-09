@@ -4,6 +4,9 @@ Changelog
 16.0 (unreleased)
 -----------------
 
+* Fixed a string exception for compatibility with Python 2.6.
+  [davisagli]
+
 * Added support for SOSL searches via the search method.  Thanks to Alex Tokar
   of Web Collective.
   [davisagli]
