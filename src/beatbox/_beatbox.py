@@ -72,6 +72,9 @@ class Client:
     def queryMore(self, queryLocator):
         return QueryMoreRequest(self.__serverUrl, self.sessionId, self.batchSize, queryLocator).post(self.__conn)
         
+    def search(self, sosl):
+        return SearchRequest(self.__serverUrl, self.sessionId, self.batchSize, sosl).post(self.__conn)
+        
     def getUpdated(self, sObjectType, start, end):
         return GetUpdatedRequest(self.__serverUrl, self.sessionId, sObjectType, start, end).post(self.__conn)
         
@@ -400,7 +403,16 @@ class QueryMoreRequest(QueryOptionsRequest):
         
     def writeBody(self, s):
         s.writeStringElement(_partnerNs, "queryLocator", self.__queryLocator)
+
+
+class SearchRequest(QueryOptionsRequest):
+    def __init__(self, serverUrl, sessionId, batchSize, sosl):
+        QueryOptionsRequest.__init__(self, serverUrl, sessionId, batchSize, "search")
+        self.__search = sosl
         
+    def writeBody(self, s):
+        s.writeStringElement(_partnerNs, "searchString", self.__search)
+
 
 class GetUpdatedRequest(AuthenticatedRequest):
     def __init__(self, serverUrl, sessionId, sObjectType, start, end, operationName="getUpdated"):

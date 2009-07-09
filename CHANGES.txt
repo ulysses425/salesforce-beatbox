@@ -4,6 +4,10 @@ Changelog
 16.0 (unreleased)
 -----------------
 
+* Added support for SOSL searches via the search method.  Thanks to Alex Tokar
+  of Web Collective.
+  [davisagli]
+
 * Added an optional cache for the sObject type descriptions needed for
   marshalling query results into Python objects. This can avoid an extra
   describeSObjects API call for each query, but means that the information

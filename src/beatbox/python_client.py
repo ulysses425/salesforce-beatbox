@@ -254,6 +254,21 @@ class Client(BaseClient):
                               queryLocator = str(res[_tPartnerNS.queryLocator]))
         return data
 
+    def search(self, sosl):
+        res = BaseClient.search(self, sosl)
+
+        if not self.cacheTypeDescriptions:
+            self.flushTypeDescriptionsCache()
+        # calculate the union of the sets of record types from each record
+        if len(res):
+            types = reduce(lambda a,b: a|b, [getRecordTypes(r) for r in res[_tPartnerNS.searchRecords]], set())
+            new_types = types - set(self.typeDescs.keys())
+            if new_types:
+                self.typeDescs.update(self.queryTypesDescriptions(new_types))
+            return [self._extractRecord(r) for r in res[_tPartnerNS.searchRecords]]
+        else:
+            return []
+
     def delete(self, ids):
         res = BaseClient.delete(self, ids)
         if type(res) not in (TupleType, ListType):
