@@ -96,6 +96,11 @@ class TestBeatbox(unittest.TestCase):
         self.assertEqual(
             janeid, str(records[0][beatbox._tSObjectNS.Id]))
 
+    def testSearch(self):
+        sosl = 'find {barr} in ALL FIELDS returning Contact(Id, LastName, FirstName, Phone, Email, Birthdate)'
+        res = svc.search(sosl)
+        self.assertEqual(len(res), 1)
+
 
 def test_suite():
     return unittest.TestSuite((
