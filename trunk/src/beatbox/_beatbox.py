@@ -6,6 +6,7 @@ __credits__ = "Mad shouts to the sforce possie"
 __copyright__ = "(C) 2006 Simon Fell. GNU GPL 2."
 
 import httplib
+import logging
 from urlparse import urlparse
 from StringIO import StringIO
 import gzip
@@ -34,6 +35,7 @@ gzipRequest=True    # are we going to gzip the request ?
 gzipResponse=True   # are we going to tell teh server to gzip the response ?
 forceHttp=False     # force all connections to be HTTP, for debugging
 
+logger = logging.getLogger('beatbox')
 
 def makeConnection(scheme, host):
     if forceHttp or scheme.upper() == 'HTTP':
@@ -287,6 +289,7 @@ class SoapEnvelope:
     #   todo: check for mU='1' headers
     #   returns the relevant result from the body child
     def post(self, conn=None, alwaysReturnList=False):
+        logger.debug(self.__class__)
         headers = { "User-Agent": "BeatBox/" + __version__,
                     "SOAPAction": "\"\"",
                     "Content-Type": "text/xml; charset=utf-8" }
