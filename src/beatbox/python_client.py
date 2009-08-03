@@ -222,7 +222,8 @@ class Client(BaseClient):
             if 'conditionalExpression' in kw: # BBB: fields, sObjectType, conditionExpression as kwarg
                 queryString += ' where %s' % (kw['conditionalExpression'])
         elif len(args) == 3: # BBB: fields, sObjectType, conditionExpression as positional arg
-            queryString = 'select %s from %s where %s' % (args[0], args[1], args[2])
+            whereClause = args[2] and (' where %s' % args[2]) or ''
+            queryString = 'select %s from %s%s' % (args[0], args[1], whereClause)
         else:
             raise RuntimeError, "Wrong number of arguments to query method."
 

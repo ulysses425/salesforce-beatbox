@@ -378,6 +378,9 @@ class TestUtils(unittest.TestCase):
         res = svc.query('LastName, FirstName, Phone, Email, Birthdate',
                 'Contact', "LastName = 'Doe'")
         self.assertEqual(res['size'], 2)
+        # conditional expression as *empty* positional arg
+        res = svc.query('LastName', 'Contact', '')
+        self.failUnless(res['size'] > 0)
         # conditional expression as kwarg
         res = svc.query('Id, LastName, FirstName, Phone, Email, Birthdate',
                 'Contact', conditionalExpression="LastName = 'Doe' and FirstName = 'Jane'")
@@ -642,7 +645,7 @@ class TestUtils(unittest.TestCase):
         res = svc.queryMore(res['queryLocator'])
         self.failUnless(res['done'])
         self.assertEqual(len(res['records']), 50)
-
+    
     def testSearch(self):
         res = self.svc.search("FIND {barr} in ALL FIELDS RETURNING Contact(Id, Birthdate)")
         self.assertEqual(len(res), 1)
@@ -651,7 +654,7 @@ class TestUtils(unittest.TestCase):
         
         res = self.svc.search("FIND {khgkshgsuhalsf} in ALL FIELDS RETURNING Contact(Id)")
         self.assertEqual(len(res), 0)
-
+    
     def testGetDeleted(self):
         svc = self.svc
         startdate = datetime.datetime.utcnow()
