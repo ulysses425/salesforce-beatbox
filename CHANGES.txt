@@ -4,6 +4,9 @@ Changelog
 16.0 (unreleased)
 -----------------
 
+* Log beatbox calls at the debug level.
+  [davisagli]
+
 * Fixed a string exception for compatibility with Python 2.6.
   [davisagli]
 
