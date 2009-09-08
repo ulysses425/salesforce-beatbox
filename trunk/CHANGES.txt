@@ -1,8 +1,8 @@
 Changelog
 =========
 
-16.0 (unreleased)
------------------
+16.0b1 (2009-09-08)
+-------------------
 
 * Log beatbox calls at the debug level.
   [davisagli]
@@ -45,6 +45,7 @@ Changelog
 
 * Update to use version 16.0 of the Salesforce.com partner WSDL.
   [davisagli]
+
 
 0.12 (2009-05-13)
 -----------------

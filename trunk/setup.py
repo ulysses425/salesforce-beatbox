@@ -2,10 +2,10 @@
 from setuptools import setup
 
 setup(name='beatbox',
-    version='16.0dev', # be sure to update the version in _beatbox.py too
+    version='16.0b1', # be sure to update the version in _beatbox.py too
     package_dir={'': 'src'},
     packages=['beatbox'],
-    author = "Simon Fell",
+    author = "Simon Fell et al",
     description = "A Python library for querying/updating Saleforce.com data via SOAP API",
     long_description = open('README.txt').read() + "\n" + open('CHANGES.txt').read(),
     license = "GNU GENERAL PUBLIC LICENSE Version 2",
