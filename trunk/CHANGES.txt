@@ -4,8 +4,11 @@ Changelog
 16.0 (2009-11-11)
 -----------------
 
+* Fix issue where numbers of type long weren't converted to a string.
+  [spleeman, davisagli]
+
 * Only catch HTTP exceptions when retrying a connection.
-  [davisagli]
+  [spleeman, davisagli]
 
 16.0b1 (2009-09-08)
 -------------------
