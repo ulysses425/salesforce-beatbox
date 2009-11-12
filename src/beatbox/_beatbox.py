@@ -1,6 +1,6 @@
 """beatbox: Makes the salesforce.com SOAP API easily accessible."""
 
-__version__ = '16.0.0dev'
+__version__ = '16.0'
 __author__ = "Simon Fell et al"
 __credits__ = "Mad shouts to the sforce possie"
 __copyright__ = "(C) 2006 Simon Fell. GNU GPL 2."
@@ -296,7 +296,7 @@ class SoapEnvelope:
         if gzipResponse:
             headers['accept-encoding'] = 'gzip'
         if gzipRequest:
-            headers['content-encoding'] = 'gzip'                    
+            headers['content-encoding'] = 'gzip'
         close = False
         (scheme, host, path, params, query, frag) = urlparse(self.serverUrl)
         max_attempts = 3
@@ -310,7 +310,7 @@ class SoapEnvelope:
                 conn.request("POST", path, self.makeEnvelope(), headers)
                 response = conn.getresponse()
                 rawResponse = response.read()
-            except:
+            except httplib.HTTPException:
                 if conn != None:
                     conn.close()
                     conn = None
