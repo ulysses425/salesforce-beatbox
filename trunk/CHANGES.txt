@@ -1,7 +1,7 @@
 Changelog
 =========
 
-16.0 (2009-11-11)
+16.0 (2009-11-12)
 -----------------
 
 * Don't strip newlines when marshalling the values of textarea fields.
@@ -15,6 +15,7 @@ Changelog
 
 * Only catch HTTP exceptions when retrying a connection.
   [spleeman, davisagli]
+
 
 16.0b1 (2009-09-08)
 -------------------
