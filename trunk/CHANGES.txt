@@ -4,6 +4,9 @@ Changelog
 16.0 (2009-11-11)
 -----------------
 
+* Don't strip newlines when marshalling the values of textarea fields.
+  [davisagli]
+
 * Make sure to add a field to fieldsToNull if its Python value is None.
   [rhettg, davisagli]
 
