@@ -199,9 +199,7 @@ class XmlWriter:
         elif isinstance(s, datetime.date):
             # todo, try isoformat
             s = "%04d-%02d-%02d" % (s.year, s.month, s.day)
-        elif isinstance(s, int):
-            s = str(s)
-        elif isinstance(s, float):
+        elif isinstance(s, (int, float, long)):
             s = str(s)
         self.xg.characters(s)
 
