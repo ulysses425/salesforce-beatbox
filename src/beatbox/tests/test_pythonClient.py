@@ -817,6 +817,23 @@ class TestUtils(unittest.TestCase):
             [{'val': [],
               'fieldsToNull': ['val'],
             }])
+    
+    def testRetrieveTextWithNewlines(self):
+        data = dict(type='Contact',
+            LastName='Doe',
+            FirstName='John',
+            Description="This is a\nmultiline description.",
+            )
+        res = self.svc.create([data])
+        self.failUnless(type(res) in (ListType, TupleType))
+        self.failUnless(len(res) == 1)
+        self.failUnless(res[0]['success'])
+        id = res[0]['id']
+        self._todelete.append(id)
+        contacts = self.svc.retrieve('Description', 'Contact', [id])
+        self.assertEqual(len(contacts), 1)
+        contact = contacts[0]
+        self.assertEqual(data['Description'], contact['Description'])
 
 def test_suite():
     return unittest.TestSuite((
