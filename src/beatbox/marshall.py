@@ -11,8 +11,10 @@ datetimeregx = re.compile(
 
 doubleregx = re.compile(r'^(\d)+(\.\d+)?$')
 
-stringtypes = ('string', 'id', 'textarea', 'phone', 'url', 'email',
+stringtypes = ('string', 'id', 'phone', 'url', 'email',
                 'anyType', 'picklist', 'reference')
+
+texttypes = ('textarea')
 
 doubletypes = ('double', 'currency', 'percent')
 
@@ -35,6 +37,16 @@ def stringMarshaller(fieldname, xml, ns):
     return str(xml[getattr(ns,fieldname)])
 
 register(stringtypes, stringMarshaller)
+
+def textMarshaller(fieldname, xml, ns):
+    # Avoid removal of newlines.
+    node = xml[getattr(ns,fieldname)]
+    text = ''
+    for x in node._dir:
+        text += unicode(x)
+    return text.encode('utf-8')
+
+register(texttypes, textMarshaller)
 
 def multiMarshaller(fieldname, xml, ns):
     asString = str(xml[getattr(ns,fieldname):][0])
