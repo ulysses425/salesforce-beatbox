@@ -6,6 +6,7 @@ import sfconfig
 import beatbox
 
 from beatbox import SoapFaultError
+from beatbox.python_client import _prepareSObjects
 
 class TestUtils(unittest.TestCase):
 
@@ -13,7 +14,7 @@ class TestUtils(unittest.TestCase):
         self.svc = svc = beatbox.PythonClient()
         svc.login(sfconfig.USERNAME, sfconfig.PASSWORD)
         self._todelete = list()
-
+    
     def tearDown(self):
         svc = self.svc
         ids = self._todelete
@@ -23,7 +24,7 @@ class TestUtils(unittest.TestCase):
                 ids = ids[200:]
             if ids:
                 svc.delete(ids)
-
+    
     def testDescribeGlobal(self):
         svc = self.svc
         res = svc.describeGlobal()
@@ -806,6 +807,16 @@ class TestUtils(unittest.TestCase):
         for k in ['LastName', 'FirstName', 'Phone', 'Email', 'Birthdate']:
             self.assertEqual(
                 data[k], contact[k])
+    
+    def testPrepareSObjectsWithNone(self):
+        obj = {
+            'val': None,
+        }
+        prepped_obj = _prepareSObjects([obj])
+        self.assertEqual(prepped_obj,
+            [{'val': [],
+              'fieldsToNull': ['val'],
+            }])
 
 def test_suite():
     return unittest.TestSuite((

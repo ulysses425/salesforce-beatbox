@@ -363,19 +363,23 @@ class Field(object):
 # ['one','two','three'] becomes 'one;two;three'
 def _prepareSObjects(sObjects):
      def _doPrep(field_dict):
-         """Salesforce expects string to be "apple;orange;pear"
-            so if a field is in Python list format, convert it to string.
-            We also set an array of any list-type fields that should be
-            set to empty, as this is a special case in the Saleforce API,
-            and merely setting the list to an empty string doesn't cause
-            the values to be updated."""
+         """Do some prep work converting python types into formats that
+            Salesforce will accept. This includes converting lists of strings
+            to "apple;orange;pear" format as well as Null-ing any empty lists
+            or None values.
+         """
          fieldsToNull = []
          for k,v in field_dict.items():
+             if v is None:
+                 fieldsToNull.append(k)
+                 field_dict[k] = []
              if hasattr(v,'__iter__'):
                  if len(v) == 0:
                      fieldsToNull.append(k)
                  else:
                      field_dict[k] = ";".join(v)
+         if 'fieldsToNull' in field_dict:
+             raise ValueError, "fieldsToNull should be populated by the client, not the caller."
          field_dict['fieldsToNull'] = fieldsToNull
      
      sObjectsCopy = copy.deepcopy(sObjects)
