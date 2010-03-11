@@ -7,6 +7,7 @@ __copyright__ = "(C) 2006 Simon Fell. GNU GPL 2."
 
 import httplib
 import logging
+import socket
 from urlparse import urlparse
 from StringIO import StringIO
 import gzip
@@ -308,7 +309,7 @@ class SoapEnvelope:
                 conn.request("POST", path, self.makeEnvelope(), headers)
                 response = conn.getresponse()
                 rawResponse = response.read()
-            except httplib.HTTPException:
+            except (httplib.HTTPException, socket.error):
                 if conn != None:
                     conn.close()
                     conn = None

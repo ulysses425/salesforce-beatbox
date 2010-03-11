@@ -1,8 +1,12 @@
 Changelog
 =========
 
-17.0 (unreleased)
+16.1 (2010-03-11)
 -----------------
+
+* Catch and retry on exceptions from the socket library, in addition to ones
+  from httplib.  This fixes a regression introduced in version 16.0.
+  [davisagli]
 
 
 16.0 (2009-11-12)
