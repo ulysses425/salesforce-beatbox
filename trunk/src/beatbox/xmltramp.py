@@ -5,8 +5,7 @@ __author__ = "Aaron Swartz"
 __credits__ = "Many thanks to pjz, bitsko, and DanC."
 __copyright__ = "(C) 2003 Aaron Swartz. GNU GPL 2."
 
-import __builtin__
-if not hasattr(__builtin__, 'True'): True, False = 1, 0
+if not hasattr(__builtins__, 'True'): True, False = 1, 0
 def isstr(f): return isinstance(f, type('')) or isinstance(f, type(u''))
 def islst(f): return isinstance(f, type(())) or isinstance(f, type([]))
 

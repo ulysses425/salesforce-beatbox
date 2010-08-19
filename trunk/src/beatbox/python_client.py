@@ -94,7 +94,6 @@ class Client(BaseClient):
         return data
 
     def describeSObjects(self, sObjectTypes):
-        import pdb; pdb.set_trace( )
         res = BaseClient.describeSObjects(self, sObjectTypes)
         if type(res) not in (TupleType, ListType):
             res = [res]
@@ -209,10 +208,7 @@ class Client(BaseClient):
                                                   size=int(str(field[_tPartnerNS.size]))
                                                  )
                else:
-                   try:
-                       record[fname] = type_data.marshall(fname, r)
-                   except:
-                       import pdb; pdb.set_trace( )
+                   record[fname] = type_data.marshall(fname, r)
         return record
 
     def flushTypeDescriptionsCache(self):
