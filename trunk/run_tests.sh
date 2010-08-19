@@ -1,5 +1,5 @@
 #!/bin/bash
-PYTHON=~/jython2.5.1/bin/jython
+PYTHON=python
 export PYTHONPATH=.:./src
 
 $PYTHON src/beatbox/tests/test_beatbox.py
