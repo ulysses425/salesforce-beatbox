@@ -8,6 +8,7 @@ Changelog
   compatibility, we set the types property of the describeGlobal response
   to a list of the names of all types (which Salesforce now returns in
   separate DescribeGlobalSObjectResult objects).
+  [davisagli]
 
 * Update to use version 19.0 of the Salesforce.com partner WSDL.
   [davisagli]
