@@ -1,6 +1,17 @@
 Changelog
 =========
 
+19.0 (unreleased)
+
+* Update marshalling of describeGlobal and describeSObjects responses to
+  include new properties now returned by the API.  For backwards
+  compatibility, we set the types property of the describeGlobal response
+  to a list of the names of all types (which Salesforce now returns in
+  separate DescribeGlobalSObjectResult objects).
+
+* Update to use version 19.0 of the Salesforce.com partner WSDL.
+  [davisagli]
+
 16.1 (2010-03-11)
 -----------------
 

@@ -32,6 +32,8 @@ class TestUtils(unittest.TestCase):
         self.failUnless(type(res['encoding']) in StringTypes)
         self.assertEqual(type(res['maxBatchSize']), IntType)
         self.assertEqual(type(res['types']), ListType)
+        self.failUnless(len(res['sobjects']) > 0)
+        # BBB for API < 17.0
         self.failUnless(len(res['types']) > 0)
     
     def testDescribeSObjects(self):
@@ -401,15 +403,15 @@ class TestUtils(unittest.TestCase):
         self.svc.cacheTypeDescriptions = True
         
         # should get called the first time
-        res = self.svc.query('SELECT Id FROM Contact')
+        self.svc.query('SELECT Id FROM Contact')
         self.assertEqual(calls, [['Contact']])
         # but not the second time
-        res = self.svc.query('SELECT Id FROM Contact')
+        self.svc.query('SELECT Id FROM Contact')
         self.assertEqual(calls, [['Contact']])
         
         # if we flush the cache, it should get called again
         self.svc.flushTypeDescriptionsCache()
-        res = self.svc.query('SELECT Id FROM Contact')
+        self.svc.query('SELECT Id FROM Contact')
         self.assertEqual(calls, [['Contact'], ['Contact']])
     
         # clean up
