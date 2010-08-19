@@ -90,7 +90,35 @@ class Client(BaseClient):
         data = dict()
         data['encoding'] = str(res[_tPartnerNS.encoding])
         data['maxBatchSize'] = int(str(res[_tPartnerNS.maxBatchSize]))
+        sobjects = list()
+        for r in res[_tPartnerNS.sobjects:]:
+            d = dict()
+            d['activateable'] = _bool(r[_tPartnerNS.activateable])
+            d['createable'] = _bool(r[_tPartnerNS.createable])
+            d['custom'] = _bool(r[_tPartnerNS.custom])
+            d['customSetting'] = _bool(r[_tPartnerNS.customSetting])
+            d['deletable'] = _bool(r[_tPartnerNS.deletable])
+            d['deprecatedAndHidden'] = _bool(r[_tPartnerNS.deprecatedAndHidden])
+            d['feedEnabled'] = _bool(r[_tPartnerNS.feedEnabled])
+            d['keyPrefix'] = str(r[_tPartnerNS.keyPrefix])
+            d['label'] = str(r[_tPartnerNS.label])
+            d['labelPlural'] = str(r[_tPartnerNS.labelPlural])
+            d['layoutable'] = _bool(r[_tPartnerNS.layoutable])
+            d['mergeable'] = _bool(r[_tPartnerNS.mergeable])
+            d['name'] = str(r[_tPartnerNS.name])
+            d['queryable'] = _bool(r[_tPartnerNS.queryable])
+            d['replicateable'] = _bool(r[_tPartnerNS.replicateable])
+            d['retrieveable'] = _bool(r[_tPartnerNS.retrieveable])
+            d['searchable'] = _bool(r[_tPartnerNS.searchable])
+            d['triggerable'] = _bool(r[_tPartnerNS.triggerable])
+            d['undeletable'] = _bool(r[_tPartnerNS.undeletable])
+            d['updateable'] = _bool(r[_tPartnerNS.updateable])
+            sobjects.append(SObject(**d))
+        data['sobjects'] = sobjects
         data['types'] = [str(t) for t in res[_tPartnerNS.types:]]
+        if not data['types']:
+            # BBB for code written against API < 17.0
+            data['types'] = [s.name for s in data['sobjects']]
         return data
 
     def describeSObjects(self, sObjectTypes):
@@ -101,27 +129,36 @@ class Client(BaseClient):
         for r in res:
             d = dict()
             d['activateable'] = _bool(r[_tPartnerNS.activateable])
+            rawreldata = r[_tPartnerNS.ChildRelationships:]
+            relinfo = [_extractChildRelInfo(cr) for cr in rawreldata]
+            d['ChildRelationships'] = relinfo
             d['createable'] = _bool(r[_tPartnerNS.createable])
             d['custom'] = _bool(r[_tPartnerNS.custom])
+            d['customSetting'] = _bool(r[_tPartnerNS.customSetting])
             d['deletable'] = _bool(r[_tPartnerNS.deletable])
+            d['deprecatedAndHidden'] = _bool(r[_tPartnerNS.deprecatedAndHidden])
+            d['feedEnabled'] = _bool(r[_tPartnerNS.feedEnabled])
             fields = r[_tPartnerNS.fields:]
             fields = [_extractFieldInfo(f) for f in fields]
             field_map = dict()
             for f in fields:
                 field_map[f.name] = f
             d['fields'] = field_map
-            rawreldata = r[_tPartnerNS.ChildRelationships:]
-            relinfo = [_extractChildRelInfo(cr) for cr in rawreldata]
-            d['ChildRelationships'] = relinfo
             d['keyPrefix'] = str(r[_tPartnerNS.keyPrefix])
             d['label'] = str(r[_tPartnerNS.label])
             d['labelPlural'] = str(r[_tPartnerNS.labelPlural])
             d['layoutable'] = _bool(r[_tPartnerNS.layoutable])
+            d['mergeable'] = _bool(r[_tPartnerNS.mergeable])
             d['name'] = str(r[_tPartnerNS.name])
             d['queryable'] = _bool(r[_tPartnerNS.queryable])
+            d['recordTypeInfos'] = [_extractRecordTypeInfo(rti) for rti in r[_tPartnerNS.recordTypeInfos:]]
             d['replicateable'] = _bool(r[_tPartnerNS.replicateable])
             d['retrieveable'] = _bool(r[_tPartnerNS.retrieveable])
             d['searchable'] = _bool(r[_tPartnerNS.searchable])
+            try:
+                d['triggerable'] = _bool(r[_tPartnerNS.triggerable])
+            except KeyError:
+                pass
             d['undeletable'] = _bool(r[_tPartnerNS.undeletable])
             d['updateable'] = _bool(r[_tPartnerNS.updateable])
             d['urlDetail'] = str(r[_tPartnerNS.urlDetail])
@@ -342,6 +379,7 @@ class Client(BaseClient):
                     logoUrl = str(r[_tPartnerNS.logoUrl]),
                     selected = _bool(r[_tPartnerNS.selected]),
                     tabs=tabs)
+            data.append(d)
         return data
 
     def describeLayout(self, sObjectType):
@@ -448,6 +486,13 @@ def _extractChildRelInfo(crdata):
     data['field'] = str(crdata[_tPartnerNS.field])
     return data
 
+def _extractRecordTypeInfo(rtidata):
+    data = dict()
+    data['available'] = _bool(rtidata[_tPartnerNS.available])
+    data['defaultRecordTypeMapping'] = _bool(rtidata[_tPartnerNS.defaultRecordTypeMapping])
+    data['name'] = str(rtidata[_tPartnerNS.name])
+    data['recordTypeId'] = str(rtidata[_tPartnerNS.recordTypeId])
+    return data
 
 def _extractError(edata):
     data = dict()
