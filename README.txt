@@ -19,8 +19,9 @@ This module contains 2 versions of the Salesforce.com client:
 Compatibility
 =============
 
-Beatbox supports version 16.0 of the Salesforce Partner Web Services API.
-However, the following API calls have not been implemented at this time:
+Beatbox supports versions 16.0 through 19.0 of the Salesforce Partner Web
+Services API. However, the following API calls have not been implemented at
+this time:
 
  * convertLead
  * emptyRecycleBin
@@ -32,6 +33,8 @@ However, the following API calls have not been implemented at this time:
  * undelete
  * describeSObject
  * sendEmail
+ * describeDataCategoryGroups
+ * describeDataCategoryGroupStructures
 
 Beatbox has been tested with Python 2.4 and Python 2.6.
 

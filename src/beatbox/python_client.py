@@ -96,10 +96,16 @@ class Client(BaseClient):
             d['activateable'] = _bool(r[_tPartnerNS.activateable])
             d['createable'] = _bool(r[_tPartnerNS.createable])
             d['custom'] = _bool(r[_tPartnerNS.custom])
-            d['customSetting'] = _bool(r[_tPartnerNS.customSetting])
+            try:
+                d['customSetting'] = _bool(r[_tPartnerNS.customSetting])
+            except KeyError:
+                pass
             d['deletable'] = _bool(r[_tPartnerNS.deletable])
             d['deprecatedAndHidden'] = _bool(r[_tPartnerNS.deprecatedAndHidden])
-            d['feedEnabled'] = _bool(r[_tPartnerNS.feedEnabled])
+            try:
+                d['feedEnabled'] = _bool(r[_tPartnerNS.feedEnabled])
+            except KeyError:
+                pass
             d['keyPrefix'] = str(r[_tPartnerNS.keyPrefix])
             d['label'] = str(r[_tPartnerNS.label])
             d['labelPlural'] = str(r[_tPartnerNS.labelPlural])
@@ -134,10 +140,16 @@ class Client(BaseClient):
             d['ChildRelationships'] = relinfo
             d['createable'] = _bool(r[_tPartnerNS.createable])
             d['custom'] = _bool(r[_tPartnerNS.custom])
-            d['customSetting'] = _bool(r[_tPartnerNS.customSetting])
+            try:
+                d['customSetting'] = _bool(r[_tPartnerNS.customSetting])
+            except KeyError:
+                pass
             d['deletable'] = _bool(r[_tPartnerNS.deletable])
             d['deprecatedAndHidden'] = _bool(r[_tPartnerNS.deprecatedAndHidden])
-            d['feedEnabled'] = _bool(r[_tPartnerNS.feedEnabled])
+            try:
+                d['feedEnabled'] = _bool(r[_tPartnerNS.feedEnabled])
+            except KeyError:
+                pass
             fields = r[_tPartnerNS.fields:]
             fields = [_extractFieldInfo(f) for f in fields]
             field_map = dict()
