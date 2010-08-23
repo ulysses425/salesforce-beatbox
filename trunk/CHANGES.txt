@@ -10,7 +10,8 @@ Changelog
   separate DescribeGlobalSObjectResult objects).
   [davisagli]
 
-* Update to use version 19.0 of the Salesforce.com partner WSDL.
+* Update to use version 19.0 of the Salesforce.com partner WSDL by default.
+  Also, use the new login.salesforce.com login endpoint by default.
   [davisagli]
 
 16.1 (2010-03-11)
