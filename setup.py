@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(name='beatbox',
-    version='16.1', # be sure to update the version in _beatbox.py too
+    version='39.0', # be sure to update the version in _beatbox.py too
     package_dir={'': 'src'},
     packages=['beatbox'],
     author = "Simon Fell et al",

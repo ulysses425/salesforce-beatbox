@@ -1,7 +1,8 @@
 Changelog
 =========
 
-19.0 (unreleased)
+19.0 (2010-08-23)
+-----------------
 
 * Update marshalling of describeGlobal and describeSObjects responses to
   include new properties now returned by the API.  For backwards
