@@ -618,6 +618,25 @@ class TestUtils(unittest.TestCase):
     
         self.assertEqual(query_res.size, 2)
     
+    def testAggregateQuery(self):
+        svc = self.svc
+        contact_data = dict(type='Contact',
+                            LastName='TestLastName',
+                            FirstName='TestFirstName',
+                            Phone='123-456-7890',
+                            Email='testfirstname@testlastname.com',
+                            Birthdate = datetime.date(1900, 1, 5)
+                           )
+        contact = svc.create([contact_data])
+        self._todelete.append(contact[0]['id'])
+        
+        res = svc.query("SELECT MAX(CreatedDate) FROM Contact GROUP BY LastName")
+        # the aggregate result is in the 'expr0' attribute of the result
+        self.failUnless(hasattr(res[0], 'expr0'))
+        # (unfortunately no field type info is returned as part of the
+        # AggregateResult object, so we can't automatically marshall to the
+        # correct Python type)
+    
     def testQueryDoesNotExist(self):
         res = self.svc.query('LastName, FirstName, Phone, Email, Birthdate',
                 'Contact', "LastName = 'Doe'")
