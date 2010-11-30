@@ -12,7 +12,7 @@ datetimeregx = re.compile(
 doubleregx = re.compile(r'^(\d)+(\.\d+)?$')
 
 stringtypes = ('string', 'id', 'phone', 'url', 'email',
-                'anyType', 'picklist', 'reference')
+                'anyType', 'picklist', 'reference', 'encryptedstring')
 
 texttypes = ('textarea')
 

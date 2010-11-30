@@ -1,6 +1,16 @@
 Changelog
 =========
 
+20.0 (2010-11-30)
+-----------------
+
+* Add 'encryptedstring' to the list of types marshalled as strings.  Thanks
+  sobyone.
+  [davisagli]
+
+* Update to use version 20.0 of the Salesforce.com partner WSDL by default.
+  [davisagli]
+
 19.0 (2010-08-23)
 -----------------
 
